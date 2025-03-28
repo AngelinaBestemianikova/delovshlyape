@@ -5,7 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Незабываемые праздники для ваших детей</title>
-  <link rel="stylesheet" href="style_main.css" />
+  <link rel="stylesheet" href="style/general.css" />
+  <link rel="stylesheet" href="style/style_main.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -15,6 +16,23 @@
 
 <body>
   <?php include 'includes/header.php'; ?>
+  
+  <?php
+  require_once 'includes/db.php';
+  
+  // Fetch program types
+  $programs_query = "SELECT * FROM program_types ORDER BY id";
+  $programs_result = mysqli_query($link, $programs_query);
+  
+  // Fetch latest review
+  $review_query = "SELECT r.*, u.first_name as name, u.path_image as avatar 
+                   FROM reviews r 
+                   JOIN users u ON r.user_id = u.id 
+                   ORDER BY r.created_time DESC 
+                   LIMIT 1";
+  $review_result = mysqli_query($link, $review_query);
+  $latest_review = mysqli_fetch_assoc($review_result);
+  ?>
 
   <main>
     <section class="main">
@@ -55,24 +73,16 @@
         <h1>Программы</h1>
         <p class="programs-description">Выберите идеальную программу для вашего ребенка!</p>
         <div class="program-cards">
-          <div class="program-card">
-            <img src="images/image.png" alt="Сказочный мир" />
-            <h3>Сказочный мир для ваших детей (1-10 лет)</h3>
-            <p>Погрузитесь в волшебство с нашими аниматорами!</p>
-            <button class="secondary-button">Подробнее</button>
-          </div>
-          <div class="program-card">
-            <img src="images/image-1.png" alt="Тематические вечеринки" />
-            <h3>Тематические вечеринки для подростков (11+)</h3>
-            <p>Создайте незабываемые воспоминания с друзьями!</p>
-            <button class="secondary-button">Подробнее</button>
-          </div>
-          <div class="program-card">
-            <img src="images/image-2.png" alt="Особые мероприятия" />
-            <h3>Особые мероприятия (выпускной вечер и т.д.)</h3>
-            <p>Незабываемый и торжественный вечер для всех!</p>
-            <button class="secondary-button">Подробнее</button>
-          </div>
+          <?php if (mysqli_num_rows($programs_result) > 0): ?>
+            <?php while ($program = mysqli_fetch_assoc($programs_result)): ?>
+              <div class="program-card">
+                <img src="<?php echo htmlspecialchars($program['path_image']); ?>" alt="" />
+                <h3><?php echo htmlspecialchars($program['name']); ?></h3>
+                <p><?php echo htmlspecialchars($program['description']); ?></p>
+                <button class="secondary-button">Подробнее</button>
+              </div>
+            <?php endwhile; ?>
+          <?php endif; ?>
         </div>
       </div>
     </section>
@@ -133,15 +143,17 @@
     <section class="reviews">
       <div class="container">
         <h1>Последний отзыв</h1>
-        <div class="review-content">
-          <p>Празднование дня рождения нашей дочери прошло с огромным успехом благодаря потрясающей команде «Дело
-            в шляпе!». Они сделали все возможное, чтобы создать волшебный праздник, который наша дочь и ее друзья
-            никогда не забудут. Спасибо вам!
-          <div class="reviewer">
-            <img src="images/review.png" alt="reviewer" class="reviewer-img">
-            <p>Наталья, мама 12-летней Насти</p>
+        <?php if ($latest_review): ?>
+          <div class="review-content">
+            <p><?php echo htmlspecialchars($latest_review['comment']); ?></p>
+            <div class="reviewer">
+              <img src="<?php echo htmlspecialchars($latest_review['avatar']); ?>" alt="<?php echo htmlspecialchars($latest_review['name']); ?>" class="reviewer-img">
+              <p><?php echo htmlspecialchars($latest_review['name']); ?></p>
+            </div>
           </div>
-        </div>
+        <?php else: ?>
+          <p>Пока нет отзывов</p>
+        <?php endif; ?>
       </div>
     </section>
 

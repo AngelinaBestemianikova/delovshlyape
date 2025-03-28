@@ -1,0 +1,353 @@
+:root {
+    --primary-color: #8773ff;
+    --secondary-color: #ec4899;
+    --background-color: #fffcf5;
+    --text-color: #000000;
+    --placeholder-color: #787878;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: "Fantazyor";
+    src: url("fonts/Fantazyor.ttf") format("ttf");
+}
+
+body {
+    font-family: "Nunito", sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+.container {
+    margin: 0 auto;
+}
+
+/* Buttons */
+.primary-button,
+.secondary-button {
+    width: 282px;
+    height: 65px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: "Nunito";
+    font-weight: 400;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.primary-button:hover {
+    transform: scale(1.05);
+}
+
+.secondary-button {
+    margin: 40px 0 20px 20px;
+    width: 190px;
+    height: 55px;
+    transition: all 0.2s;
+}
+
+/* Section Headers */
+h1 {
+    text-align: center;
+    font-size: 48px;
+    font-family: "Fantazyor";
+    font-weight: 400;
+    line-height: 130%;
+    padding: 0 20px;
+}
+
+p,
+li {
+    font-size: 24px;
+}
+
+/* Navbar */
+.navbar {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    background-color: rgb(255, 252, 245, 0.95);
+    box-shadow: 0 2px 4px rgb(135, 115, 255, 0.4);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.logo-wrapper {
+    flex-shrink: 0;
+}
+
+.logo-mobile {
+    display: none;
+    height: 40px;
+    width: auto;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: var(--primary-color);
+}
+
+.booking-button {
+    font-size: 16px;
+    width: 180px;
+    height: 50px;
+    margin-top: 0;
+}
+
+/* Burger Menu */
+.burger-menu {
+    display: none;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.burger-icon,
+.cross-icon {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+
+.cross-icon {
+    display: none;
+}
+
+.burger-menu.active .burger-icon {
+    display: none;
+}
+
+.burger-menu.active .cross-icon {
+    display: block;
+}
+
+
+/* Footer */
+footer {
+    background-color: white;
+    padding: 90px 0;
+    margin-top: 130px;
+    box-shadow: 0 0px 6px rgb(135, 115, 255, 0.6);
+}
+
+footer .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 140px;
+}
+
+.footer_links {
+    flex: 0 0 auto;
+}
+
+.footer_links .logo-img {
+    max-width: 165px;
+    margin-bottom: 35px;
+}
+
+.footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 20px;
+}
+
+.footer-links h3,
+.footer-info h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.footer-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 20px;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--primary-color);
+}
+
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.address-block p,
+.contacts-block p {
+    font-size: 20px;
+    margin: 0;
+}
+
+.social-icons {
+    display: flex;
+    gap: 10px;
+    max-width: 130px;
+    flex-wrap: wrap;
+}
+
+.social-icon {
+    width: 32px;
+    height: 32px;
+    transition: transform 0.3s ease;
+}
+
+.social-icon:hover {
+    transform: scale(1.1);
+}
+
+.social-links {
+    margin-top: auto;
+}
+
+.map-image {
+    max-width: clamp(280px, 100%, 485px);
+}
+
+@media (max-width: 1260px) {
+    .nav-links {
+        gap: 50px;
+    }
+
+
+    .footer-content {
+        gap: 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-content h3 {
+        font-size: 20px;
+    }
+
+    .footer-content p,
+    .footer-content a {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    footer {
+        padding: 30px 0 20px 0;
+    }
+
+    footer .container {
+        padding: 0 10px;
+    }
+
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .social-icons {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 1024px) {
+    .burger-menu {
+        display: block;
+    }
+
+    .booking-button {
+        display: none;
+    }
+
+    .logo-main {
+        display: none;
+    }
+
+    .logo-mobile {
+        display: block;
+        width: 75px;
+        height: 65px;
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        height: 100vh;
+        width: 300px;
+        background-color: #ffffff;
+        flex-direction: column;
+        padding: 80px 40px;
+        transition: right 0.3s ease-in-out;
+        box-shadow: -2px 0 4px rgba(135, 115, 255, 0.2);
+        margin-left: 0;
+        gap: 30px;
+    }
+
+    .nav-links.active {
+        right: 0;
+    }
+
+    .nav-links a {
+        font-size: 18px;
+    }
+
+    .booking-button {
+        margin: 20px 0 0;
+        width: 100%;
+    }
+
+    .navbar .container {
+        padding: 0.5rem 1rem;
+    }
+
+    footer {
+        padding: 45px 0;
+    }
+
+    .footer-content {
+        max-width: 500px;
+        flex-wrap: wrap;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-links {
+        width: 100%;
+        padding: 80px 20px;
+    }
+}

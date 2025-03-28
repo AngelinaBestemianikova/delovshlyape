@@ -1,157 +1,7 @@
-:root {
-  --primary-color: #8773ff;
-  --secondary-color: #ec4899;
-  --background-color: #fffcf5;
-  --text-color: #000000;
-  --placeholder-color: #787878;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-@font-face {
-  font-family: "Fantazyor";
-  src: url("fonts/Fantazyor.ttf") format("ttf");
-}
-
-body {
-  font-family: "Nunito", sans-serif;
-  color: var(--text-color);
-  background-color: var(--background-color);
-}
-
-.container {
-  margin: 0 auto;
-}
-
-/* Buttons */
-.primary-button,
-.secondary-button {
-  width: 282px;
-  height: 65px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-family: "Nunito";
-  font-weight: 400;
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.primary-button:hover {
-  transform: scale(1.05);
-}
-
-.secondary-button {
-  margin: 40px 0 20px 20px;
-  width: 190px;
-  height: 55px;
-  transition: all 0.2s;
-}
-
-/* Section Headers */
-h1 {
-  text-align: center;
-  font-size: 48px;
-  font-family: "Fantazyor";
-  font-weight: 400;
-  line-height: 130%;
-  padding: 0 20px;
-}
-
-p, li {
-  font-size: 24px;
-}
-
-/* Navbar */
-.navbar {
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 1000;
-  background-color: rgb(255, 252, 245, 0.95);
-  box-shadow: 0 2px 4px rgb(135, 115, 255, 0.4);
-}
-
-.navbar .container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-.logo-wrapper {
-  flex-shrink: 0;
-}
-
-.logo-mobile {
-  display: none;
-  height: 40px;
-  width: auto;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 60px;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: var(--text-color);
-  font-size: 16px;
-  font-weight: 400;
-  transition: color 0.3s ease;
-}
-
-.nav-links a:hover {
-  color: var(--primary-color);
-}
-
-.booking-button {
-  font-size: 16px;
-  width: 180px;
-  height: 50px;
-  margin-top: 0;
-}
-
-/* Burger Menu */
-.burger-menu {
-  display: none;
-  cursor: pointer;
-  z-index: 1001;
-}
-
-.burger-icon,
-.cross-icon {
-  width: 30px;
-  height: 30px;
-  display: block;
-}
-
-.cross-icon {
-  display: none;
-}
-
-.burger-menu.active .burger-icon {
-  display: none;
-}
-
-.burger-menu.active .cross-icon {
-  display: block;
-}
-
 /* Main Section */
 .main {
   padding: 200px 0 0 0;
-  background-image: url(images/main_bg.png);
+  background-image: url(../images/main_bg.png);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -327,31 +177,57 @@ p, li {
 /* Reviews Section */
 .reviews {
   margin: 130px 0 0 0;
+  padding: 0 20px;
+}
+
+.reviews .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.reviews h1 {
+  text-align: center;
+  margin-bottom: 50px;
 }
 
 .review-content {
-  max-width: 600px;
-  margin: 30px auto;
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.review-content > p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  flex-grow: 1;
   text-align: center;
 }
 
 .reviewer {
-  margin-top: 50px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-}
-
-.reviewer p, .review-content p {
-  font-size: 20px;
+  gap: 15px;
+  margin: 0 auto;
+  margin-top: auto;
 }
 
 .reviewer-img {
-  margin-bottom: 20px;
-  width: 78px;
-  height: 78px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
+  object-fit: cover;
+}
+
+.reviewer p {
+  font-size: 16px;
+  margin: 0;
 }
 
 /* FAQ Section */
@@ -485,11 +361,13 @@ p, li {
   height: 55px;
 }
 
-.form-row input::placeholder, textarea::placeholder {
+.form-row input::placeholder,
+textarea::placeholder {
   color: var(--placeholder-color);
 }
 
-.form-row input, textarea {
+.form-row input,
+textarea {
   width: 100%;
   padding: 20px 30px;
   background: white;
@@ -518,7 +396,7 @@ textarea {
   font-size: 16px;
 }
 
-.form-disclaimer p{
+.form-disclaimer p {
   font-size: 12px;
   text-align: left;
   max-width: 380px;
@@ -531,141 +409,62 @@ textarea {
   font-weight: 600;
 }
 
-/* Footer */
-footer {
-  background-color: white;
-  padding: 90px 0;
-  margin-top: 130px;
-  box-shadow: 0 0px 6px rgb(135, 115, 255, 0.6);
-}
-
-footer .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  gap: 140px;
-}
-
-.footer_links {
-  flex: 0 0 auto;
-}
-
-.footer_links .logo-img {
-  max-width: 165px;
-  margin-bottom: 35px;
-}
-
-.footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  font-size: 20px;
-}
-
-.footer-links h3,
-.footer-info h3 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 15px;
-}
-
-.footer-links a {
-  color: var(--text-color);
-  text-decoration: none;
-  font-size: 20px;
-  transition: color 0.3s ease;
-}
-
-.footer-links a:hover {
-  color: var(--primary-color);
-}
-
-.footer-info {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.address-block p,
-.contacts-block p {
-  font-size: 20px;
-  margin: 0;
-}
-
-.social-icons {
-  display: flex;
-  gap: 10px;
-  max-width: 130px;
-  flex-wrap: wrap;
-}
-
-.social-icon {
-  width: 32px;
-  height: 32px;
-  transition: transform 0.3s ease;
-}
-
-.social-icon:hover {
-  transform: scale(1.1);
-}
-
-.social-links {
-  margin-top: auto;
-}
-
-.map-image {
-  max-width: clamp(280px, 100%, 485px);
-}
-
 /* Media Queries */
 @media (max-width: 1260px) {
-  .nav-links{
-    gap: 50px;
-  }
-
   .program-cards {
     display: flex;
-    overflow-x:auto;
+    overflow-x: auto;
     flex-wrap: nowrap;
     justify-content: flex-start;
   }
 
   .program-cards::-webkit-scrollbar {
-    display: none; /* Для Chrome, Safari и других WebKit-браузеров */
+    display: none;
+    /* Для Chrome, Safari и других WebKit-браузеров */
   }
-  
+
   .program-cards {
-    -ms-overflow-style: none; /* Для Internet Explorer и Edge */
-    scrollbar-width: none; /* Для Firefox */
+    -ms-overflow-style: none;
+    /* Для Internet Explorer и Edge */
+    scrollbar-width: none;
+    /* Для Firefox */
   }
 
   .program-card {
     width: 90%;
     min-width: 290px;
-    max-width: 350px; 
-    flex: 0 0 auto;   
+    max-width: 350px;
+    flex: 0 0 auto;
     margin: 0 3px 6px 3px;
   }
 
   .program-card:hover {
     transform: translateY(0px);
   }
+}
 
-  .footer-content {
-    gap: 40px;
+@media (max-width: 1024px) {
+  .reviews-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
-  .about, .programs, .features, .gallery, .reviews, .faq, .contact {
+  .about,
+  .programs,
+  .features,
+  .gallery,
+  .reviews,
+  .faq,
+  .contact {
     margin-top: 100px;
   }
-  
+
+  .main {
+    padding-top: 150px;
+  }
+
   h1 {
     font-size: 32px;
   }
@@ -673,8 +472,8 @@ footer .container {
   .main h1 {
     margin-bottom: 20px;
   }
-  
-  .about-content p, 
+
+  .about-content p,
   .program-card p,
   .features-list li {
     font-size: 18px;
@@ -685,7 +484,7 @@ footer .container {
     max-width: 530px;
   }
 
-  .features-list ul{
+  .features-list ul {
     margin-left: 30px;
   }
 
@@ -698,7 +497,7 @@ footer .container {
     margin: 15px auto 35px;
   }
 
-  .programs .container p{
+  .programs .container p {
     max-width: 290px;
     font-size: 18px;
   }
@@ -713,7 +512,8 @@ footer .container {
     border-radius: 30px;
   }
 
-  .program-card h3, .faq-question h3 {
+  .program-card h3,
+  .faq-question h3 {
     font-size: 20px;
   }
 
@@ -721,17 +521,21 @@ footer .container {
     margin: 30px 15px 15px;
   }
 
-  .gallery p, .review-content p {
+  .gallery p{
     font-size: 18px;
     margin: 15px auto 35px;
-    padding: 0 20px;
+    padding: 0;
+  }
+
+  .review-content p {
+    font-size: 18px;
   }
 
   .contact p {
     font-size: 18px;
   }
 
-  .form-disclaimer p{
+  .form-disclaimer p {
     font-size: 12px;
     margin: 10px 0 0;
     padding: 0;
@@ -742,35 +546,44 @@ footer .container {
     align-items: flex-start;
   }
 
-  .footer-content h3 {
-    font-size: 20px;
+  .reviews {
+    margin-top: 100px;
+    padding: 0 15px;
   }
 
-  .footer-content p,
-  .footer-content a {
-    font-size: 18px;
+  .review-content {
+    padding: 20px;
+  }
+
+  .review-content > p, .reviewer p {
+    font-size: 16px;
   }
 }
 
 @media (max-width: 480px) {
-  .about, .programs {
+  h1 {
+    font-size: 24px;
+  }
+
+  .main {
+    padding-top: 100px;
+  }
+
+  .main-content p {
+    padding: 0 20px;
+  }
+
+  .about,
+  .programs {
     margin-top: 70px;
   }
 
-  .about{
+  .about, .programs {
     padding: 0 10px;
   }
-  
+
   .about .container {
     padding: 15px 10px;
-  }
-  
-  .programs {
-    padding: 0 10px;
-  }
-  
-  h1 {
-    font-size: 24px;
   }
   
   .about-content p,
@@ -784,7 +597,11 @@ footer .container {
     font-size: 16px;
   }
 
-  .features-list ul{
+  .about-content p {
+    margin: 0;
+  }
+
+  .features-list ul {
     margin-left: 20px;
   }
 
@@ -792,14 +609,15 @@ footer .container {
     max-width: 280px;
   }
 
-  .programs-description, .gallery p {
+  .programs-description,
+  .gallery p {
     margin: 10px auto 20px;
   }
-  
+
   .program-card h3 {
     margin: 15px 15px 10px;
   }
-  
+
   .program-card p {
     margin: 0 15px 15px;
   }
@@ -817,16 +635,21 @@ footer .container {
     padding: 0 10px;
   }
 
-  .review-content {
-    margin: 15px 0 0;
+  .reviews {
+    margin-top: 70px;
+    padding: 0 15px;
   }
 
-  .review-content p {
-    margin: 0;
+  .review-content {
+    padding: 15px;
+  }
+
+  .review-content > p {
+    margin-bottom: 15px;
   }
 
   .reviewer {
-    margin: 30px 0 0;
+    gap: 10px;
   }
 
   .faq-list {
@@ -834,7 +657,7 @@ footer .container {
     margin-top: 30px;
   }
 
-  .faq-item h3{
+  .faq-item h3 {
     font-size: 16px;
   }
 
@@ -842,101 +665,15 @@ footer .container {
     margin-bottom: 15px;
   }
 
-  .faq-answer p{
+  .faq-answer p {
     font-size: 14px;
   }
 
-  .form-disclaimer p{
+  .form-disclaimer p {
     font-size: 12px;
   }
 
   .form-row {
     grid-template-columns: 1fr;
-  }
-
-  footer {
-    padding: 30px 0 20px 0;
-  }
-
-  footer .container {
-    padding: 0 10px;
-  }
-
-  .footer-content {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .social-icons {
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 1050px) {
-  .burger-menu {
-    display: block;
-  }
-
-  .booking-button {
-    display: none;
-  }
-
-  .logo-main {
-    display: none;
-  }
-
-  .logo-mobile {
-    display: block;
-    width: 75px;
-    height: 65px;
-  }
-
-  .nav-links {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    height: 100vh;
-    width: 300px;
-    background-color: #ffffff;
-    flex-direction: column;
-    padding: 80px 40px;
-    transition: right 0.3s ease-in-out;
-    box-shadow: -2px 0 4px rgba(135, 115, 255, 0.2);
-    margin-left: 0;
-    gap: 30px;
-  }
-
-  .nav-links.active {
-    right: 0;
-  }
-
-  .nav-links a {
-    font-size: 18px;
-  }
-
-  .booking-button {
-    margin: 20px 0 0;
-    width: 100%;
-  }
-
-  .navbar .container {
-    padding: 0.5rem 1rem;
-  }
-
-  footer {
-    padding: 45px 0;
-  }
-
-  .footer-content {
-    max-width: 500px;
-    flex-wrap: wrap;
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-links {
-    width: 100%;
-    padding: 80px 20px;
   }
 }

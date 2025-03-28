@@ -1,0 +1,353 @@
+.about_intro-text {
+    padding: 200px 0 0 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about_end-text {
+    padding: 130px 0 0 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+
+.about_intro-text p,
+.about_end-text p {
+    margin: 30px 0 50px 0;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.about_end .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.about_end .container .primary-button {
+    margin: 0 auto;
+}
+
+/* Advantages Section */
+.advantages {
+    margin-top: 130px;
+    padding: 0 20px;
+}
+
+.advantages .container {
+    max-width: 1200px;
+}
+
+.advantages h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.advantages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    justify-content: center;
+}
+
+.advantage-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
+    border: 3px solid var(--primary-color);
+    transition: transform 0.3s ease;
+}
+
+.advantage-card:hover {
+    transform: translateY(-5px);
+}
+
+.advantage-card h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.advantage-card ul li {
+    list-style: none;
+    padding: 0;
+}
+
+.advantage-card li {
+    font-size: 18px;
+    text-align: center;
+    padding-left: 24px;
+}
+
+/* Team Section */
+.team {
+    margin-top: 130px;
+    padding: 0 20px;
+}
+
+.team .container {
+    max-width: 1200px;
+}
+
+.team h1 {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.team-slider-wrapper {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 24px;
+}
+
+.team-slider-wrapper::-webkit-scrollbar {
+    display: none;
+    /* Для Chrome, Safari и других WebKit-браузеров */
+}
+
+.team-slider-wrapper {
+    -ms-overflow-style: none;
+    /* Для Internet Explorer и Edge */
+    scrollbar-width: none;
+    /* Для Firefox */
+}
+
+.team-member {
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.team-member img {
+    max-width: 282px;
+    height: auto;
+    object-fit: cover;
+    border-radius: 20px;
+    margin-bottom: 20px;
+}
+
+.team-member p {
+    margin-top: 10px;
+    font-size: 18px;
+    color: var(--text-color);
+}
+
+.team-member .member-name {
+    font-size: 16px;
+    color: var(--placeholder-color);
+    margin-top: 5px;
+}
+
+/* Reviews Section */
+.reviews {
+    margin: 130px 0 0 0;
+    padding: 0 20px;
+}
+
+.reviews .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.reviews h1 {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin: 0 auto;
+}
+
+.review-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-content > p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.reviewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin: 0 auto;
+    margin-top: auto;
+}
+
+.reviewer-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.reviewer p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Media Queries */
+@media (max-width: 1024px) {
+    .advantages-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    .reviews-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .about_end-text,
+    .about_intro-text {
+        padding: 100px 0 0 0;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    .about_intro-text p,
+    .about_end-text p {
+        font-size: 18px;
+    }
+
+    .advantages,
+    .reviews {
+        margin-top: 100px;
+        padding: 0 15px;
+    }
+
+    .advantage-card {
+        padding: 15px;
+    }
+
+    .advantage-card h3 {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .advantage-card li {
+        font-size: 18px;
+        margin-bottom: 10px;
+        line-height: 1;
+    }
+
+    .team {
+        margin-top: 100px;
+    }
+
+    .team h1 {
+        margin-bottom: 30px;
+    }
+
+    .team-member p {
+        font-size: 20px;
+    }
+
+    .team-member img {
+        margin-bottom: 10px;
+    }
+
+    .review-content {
+        padding: 20px;
+    }
+
+    footer {
+        margin-top: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .about_end-text {
+        padding: 70px 0 0;
+    }
+    .about_end-text p {
+        margin-bottom: 30px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .about_intro-text p,
+    .about_end-text p {
+        font-size: 16px;
+        margin-top: 20px;
+    }
+
+    .advantages-grid {
+        gap: 12px;
+    }
+
+    .advantages {
+        margin-top: 70px;
+        padding: 0 10px;
+    }
+
+    .advantage-card {
+        padding: 10px;
+    }
+
+    .advantage-card li {
+        font-size: 16px;
+    }
+
+    .team, .reviews {
+        margin-top: 70px;
+        padding: 0 10px;
+    }
+
+    .reviews h1 {
+        margin-bottom: 30px;
+    }
+    .reviews {
+        margin: 70px 0 0 0;
+    }
+
+    .team-member p,
+    .review-content > p {
+        font-size: 16px;
+    }
+
+    .advantages-grid {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 10px;
+    }
+
+    .reviews-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .review-content {
+        padding: 15px;
+    }
+
+    .reviewer {
+        gap: 10px;
+    }
+
+    footer {
+        margin-top: 70px;
+    }
+}

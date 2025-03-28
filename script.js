@@ -17,15 +17,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Existing FAQ functionality
-const faqItems = document.querySelectorAll('.faq-item');
-faqItems.forEach(item => {
-    item.addEventListener('click', () => {
-        faqItems.forEach(otherItem => {
-            if (otherItem !== item && otherItem.classList.contains('active')) {
-                otherItem.classList.remove('active');
-            }
-        });
-        item.classList.toggle('active');
-    });
-});
