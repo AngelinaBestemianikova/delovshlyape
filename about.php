@@ -28,7 +28,8 @@ $team_result = mysqli_query($link, $team_query);
 $reviews_query = "SELECT r.*, u.first_name as name, u.path_image as avatar 
                  FROM reviews r 
                  JOIN users u ON r.user_id = u.id 
-                 ORDER BY r.created_time DESC";
+                 ORDER BY r.created_time DESC
+                 LIMIT 10";
 $reviews_result = mysqli_query($link, $reviews_query);
 ?>
 
@@ -131,5 +132,6 @@ $reviews_result = mysqli_query($link, $reviews_query);
 
 <?php include 'includes/footer.php'; ?>
 
+<script src="js/reviews.js"></script>
 </body>
 </html>

@@ -1,3 +1,10 @@
+<?php
+require_once 'includes/db.php';
+
+$query = "SELECT * FROM photos ORDER BY created_time DESC LIMIT 20";
+$result = mysqli_query($link, $query);
+?>
+
 <!DOCTYPE html>
 <html lang="ru">
 
@@ -16,32 +23,21 @@
 
 <body>
 <?php include 'includes/header.php'; ?>
+
 <section id="gallery" class="gallery">
     <div class="container">
         <h1>Галерея</h1>
         <p>Добро пожаловать в нашу фотогалерею. Здесь вы увидите, как мы создаем настоящее волшебство!</p>
         <div class="gallery-grid">
-            <div class="gallery-item">
-                <img src="images/image_gallery.png" alt="Праздник 1" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-1.png" alt="Праздник 2" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-2.png" alt="Праздник 3" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-3.png" alt="Праздник 4" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-4.png" alt="Праздник 5" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-5.png" alt="Праздник 6" />
-            </div>
-            <div class="gallery-item">
-                <img src="images/image_gallery-6.png" alt="Праздник 7" />
-            </div>
+            <?php if (mysqli_num_rows($result) > 0): ?>
+                <?php while ($photo = mysqli_fetch_assoc($result)): ?>
+                    <div class="gallery-item">
+                        <img src="<?php echo htmlspecialchars($photo['path']); ?>" alt="Праздник" />
+                    </div>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <p>В галерее пока нет фотографий.</p>
+            <?php endif; ?>
         </div>
     </div>
 </section>
@@ -50,7 +46,7 @@
     <div class="container">
         <div class="gallery_end-text">
             <h1>А вы Готовы устроить незабываемый праздник?</h1>
-            <p>ТНаши профессиональные аниматоры и организаторы позаботятся обо всех деталях, чтобы ваш праздник стал ярким и запоминающимся. Познакомьтесь с нашими программами и выберите то, что идеально подойдет вашему маленькому имениннику!
+            <p>ТНаши профессиональные аниматоры и организаторы позаботятся обо всех деталях, чтобы ваш праздник стал ярким и запоминающимся. Познакомьтесь с нашими программами и выберите то, что идеально подойдет вашему маленькому имениннику!
         </div>
         <button class="primary-button">Выбрать программу</button>
     </div>

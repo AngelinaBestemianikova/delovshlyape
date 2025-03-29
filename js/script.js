@@ -15,5 +15,27 @@ document.addEventListener('DOMContentLoaded', function() {
             burgerMenu.classList.remove('active');
         }
     });
+
+    // Dropdown menu functionality
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    navItems.forEach(item => {
+        const header = item.querySelector('.nav-item-header');
+        
+        header.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            item.classList.toggle('active');
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.nav-item')) {
+            navItems.forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+    });
 });
 

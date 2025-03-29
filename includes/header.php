@@ -6,7 +6,16 @@
         </div>
         <div class="nav-links">
             <a href="index.php">Главная</a>
-            <a href="about.php">О нас</a>
+            <div class="nav-item">
+                <div class="nav-item-header">
+                    <a href="about.php">О нас</a>
+                    <img src="images/arrow-down.svg" alt="" class="arrow">
+                </div>
+                <div class="submenu">
+                    <a href="about.php">Полезное</a>
+                    <a href="gallery.php">Галерея</a>
+                </div>
+            </div>
             <a href="programs.php">Программы</a>
             <a href="contact.php">Контакты</a>
         </div>
@@ -17,4 +26,4 @@
         </div>
     </div>
 </nav>
-<script src="script.js"></script>
+<script src="./js/script.js"></script>

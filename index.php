@@ -15,9 +15,8 @@
 </head>
 
 <body>
-  <?php include 'includes/header.php'; ?>
-  
-  <?php
+  <?php 
+  include 'includes/header.php';
   require_once 'includes/db.php';
   
   // Fetch program types

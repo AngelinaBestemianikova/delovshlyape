@@ -82,7 +82,7 @@ li {
 .navbar .container {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 1rem 2rem;
     max-width: 1440px;
     margin: 0 auto;
@@ -100,8 +100,54 @@ li {
 
 .nav-links {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 60px;
+    padding-top: 20px;
+}
+
+.nav-item {
+    position: relative;
+}
+
+.nav-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.arrow {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.nav-item.active .arrow {
+    transform: rotate(180deg);
+}
+
+.submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.nav-item.active .submenu {
+    max-height: 200px;
+}
+
+.submenu a {
+    display: block;
+    padding: 2px 0 0;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.3s ease;
+}
+
+.submenu a:hover {
+    color: var(--primary-color);
 }
 
 .nav-links a {
@@ -148,7 +194,6 @@ li {
 .burger-menu.active .cross-icon {
     display: block;
 }
-
 
 /* Footer */
 footer {
@@ -315,6 +360,7 @@ footer .container {
         box-shadow: -2px 0 4px rgba(135, 115, 255, 0.2);
         margin-left: 0;
         gap: 30px;
+        align-items: flex-start;
     }
 
     .nav-links.active {
@@ -331,6 +377,7 @@ footer .container {
     }
 
     .navbar .container {
+        align-items: center;
         padding: 0.5rem 1rem;
     }
 

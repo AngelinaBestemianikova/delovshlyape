@@ -167,9 +167,8 @@
 .review-content {
     background: white;
     border-radius: 20px;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
-    height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -179,7 +178,6 @@
     line-height: 1.5;
     margin-bottom: 20px;
     text-align: center;
-    flex-grow: 1;
 }
 
 .reviewer {
@@ -187,7 +185,6 @@
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    margin: 0 auto;
     margin-top: auto;
 }
 
@@ -209,6 +206,7 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 20px;
     }
+
     .reviews-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 20px;
@@ -268,8 +266,28 @@
         margin-bottom: 10px;
     }
 
+    .reviews-grid {
+        display: flex;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+
     .review-content {
         padding: 20px;
+        width: 90%;
+        min-width: 280px;
+        max-width: 500px;
+        flex: 0 0 auto;
+    }
+
+    .reviews-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .reviews-grid {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
     footer {
@@ -281,6 +299,7 @@
     .about_end-text {
         padding: 70px 0 0;
     }
+
     .about_end-text p {
         margin-bottom: 30px;
     }
@@ -312,7 +331,8 @@
         font-size: 16px;
     }
 
-    .team, .reviews {
+    .team,
+    .reviews {
         margin-top: 70px;
         padding: 0 10px;
     }
@@ -320,6 +340,7 @@
     .reviews h1 {
         margin-bottom: 30px;
     }
+
     .reviews {
         margin: 70px 0 0 0;
     }
