@@ -100,6 +100,14 @@
   transform: translateY(-5px);
 }
 
+.program-card .secondary-button {
+  transition: transform 0.3s ease;
+}
+
+.program-card .secondary-button:hover {
+  transform: scale(1.05);
+}
+
 .program-card h3 {
   margin: 20px 20px 15px;
   font-size: 24px;
@@ -411,14 +419,11 @@ textarea {
 
   .program-cards::-webkit-scrollbar {
     display: none;
-    /* Для Chrome, Safari и других WebKit-браузеров */
   }
 
   .program-cards {
     -ms-overflow-style: none;
-    /* Для Internet Explorer и Edge */
     scrollbar-width: none;
-    /* Для Firefox */
   }
 
   .program-card {
@@ -447,8 +452,7 @@ textarea {
   .features,
   .gallery,
   .reviews,
-  .faq,
-  .contact {
+  .faq {
     margin-top: 100px;
   }
 
@@ -512,26 +516,14 @@ textarea {
     margin: 30px 15px 15px;
   }
 
-  .gallery p{
+  .gallery p {
     font-size: 18px;
     margin: 15px auto 35px;
     padding: 0;
   }
 
-  .review-content p, 
-  .contact p {
+  .review-content p {
     font-size: 18px;
-  }
-
-  .form-disclaimer p {
-    font-size: 12px;
-    margin: 10px 0 0;
-    padding: 0;
-  }
-
-  .form-disclaimer {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .reviews {
@@ -547,7 +539,8 @@ textarea {
     padding: 20px;
   }
 
-  .review-content > p, .reviewer p {
+  .review-content > p,
+  .reviewer p {
     font-size: 16px;
   }
 }
@@ -570,22 +563,22 @@ textarea {
     margin-top: 70px;
   }
 
-  .about, .programs {
+  .about,
+  .programs {
     padding: 0 10px;
   }
 
   .about .container {
     padding: 15px 10px;
   }
-  
+
   .about-content p,
   .programs .container p,
   .program-card p,
   .main p,
   .features-list li,
   .gallery p,
-  .review-content p,
-  .contact p {
+  .review-content p {
     font-size: 16px;
   }
 
@@ -667,13 +660,5 @@ textarea {
 
   .faq-answer p {
     font-size: 14px;
-  }
-
-  .form-disclaimer p {
-    font-size: 12px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
   }
 }

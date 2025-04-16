@@ -1,0 +1,279 @@
+/* Contact Form Section */
+.contact {
+    margin: 130px auto 0;
+    background: var(--background-color);
+    max-width: 590px;
+}
+
+.contact p {
+    margin: 20px auto;
+    max-width: 530px;
+    font-size: 20px;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.contact-form {
+    padding: 0 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-row input {
+    height: 55px;
+}
+
+.form-row input::placeholder,
+textarea::placeholder {
+    color: var(--placeholder-color);
+}
+
+.form-row input,
+textarea {
+    width: 100%;
+    padding: 20px 30px;
+    background: white;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
+    font-size: 16px;
+    font-family: "Nunito";
+    font-weight: 400;
+}
+
+textarea {
+    height: 150px;
+    margin-bottom: 30px;
+    resize: none;
+}
+
+.form-disclaimer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-disclaimer button {
+    margin: 0 24px 0 0;
+    font-size: 16px;
+}
+
+.form-disclaimer p {
+    font-size: 12px;
+    text-align: left;
+    max-width: 380px;
+}
+
+.form-disclaimer p a {
+    color: var(--primary-color);
+    text-decoration: none;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .contact {
+        margin-top: 100px;
+    }
+
+    .contact p {
+        font-size: 18px;
+    }
+
+    .form-disclaimer p {
+        font-size: 12px;
+        margin: 10px 0 0;
+        padding: 0;
+    }
+
+    .form-disclaimer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .contact p {
+        font-size: 16px;
+    }
+
+    .form-disclaimer p {
+        font-size: 12px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.contact-page {
+    max-width: 1200px;
+    margin: 200px auto 0;
+}
+
+.contact-grid {
+    display: grid;
+}
+
+.contact-info {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+.contact-info:first-of-type {
+    margin-bottom: 100px;
+}
+
+.info-section {
+    max-width: 588px;
+}
+
+.info-section h2 {
+    font-size: 48px;
+    margin-bottom: 24px;
+    font-family: "Fantazyor";
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.info-section p {
+    font-size: 20px;
+    margin-bottom: 24px;
+}
+
+.contact-details {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+}
+
+.detail .label {
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.detail a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 400;
+}
+
+.social-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.social-link span {
+    font-size: 20px;
+}
+
+.social-link span:hover {
+    color: var(--primary-color);
+}
+
+.transport-section h3 {
+    font-size: 20px;
+    margin-bottom: 3px;
+    font-family: "Nunito";
+    font-weight: 700;
+}
+
+.transport-section p {
+    margin-bottom: 20px;
+}
+
+.transport-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.transport-section li {
+    margin-bottom: 4px;
+    color: var(--text-color);
+    font-size: 20px;
+}
+
+.map {
+    width: 588px;
+    height: auto;
+}
+
+@media (max-width: 1024px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .map-section {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-page {
+        padding-top: 100px;
+    }
+
+    .info-section {
+        padding: 20px;
+    }
+
+    .info-section h2 {
+        font-size: 32px;
+    }
+
+    .social-links {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .map-section {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contact-page {
+        padding-top: 80px;
+    }
+
+    .info-section h2 {
+        font-size: 28px;
+    }
+
+    .social-links {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 12px;
+    }
+
+    .detail {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+} 

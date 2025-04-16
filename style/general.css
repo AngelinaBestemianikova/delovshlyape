@@ -107,13 +107,13 @@ li {
 
 .nav-item {
     position: relative;
+    max-width: 100px;
 }
 
 .nav-item-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 5px;
+    gap: 12px;
     cursor: pointer;
     margin-bottom: 8px;
 }
@@ -133,8 +133,14 @@ li {
     transition: max-height 0.3s ease-out;
 }
 
+.submenu-programs {
+    display: none;
+}
+
 .nav-item.active .submenu {
     max-height: 200px;
+    overflow: visible;
+    display: block;
 }
 
 .submenu a {
@@ -144,6 +150,7 @@ li {
     text-decoration: none;
     font-size: 16px;
     transition: color 0.3s ease;
+    overflow: visible;
 }
 
 .submenu a:hover {
@@ -156,6 +163,8 @@ li {
     font-size: 16px;
     font-weight: 400;
     transition: color 0.3s ease;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .nav-links a:hover {

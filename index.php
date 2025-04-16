@@ -7,6 +7,7 @@
   <title>Незабываемые праздники для ваших детей</title>
   <link rel="stylesheet" href="style/general.css" />
   <link rel="stylesheet" href="style/style_main.css" />
+  <link rel="stylesheet" href="style/contact.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -249,26 +250,9 @@
     </section>
 
     <section class="contact">
-      <div class="container">
-        <h1>Остались вопросы?</h1>
-        <p>Мы с удовольствием подскажем! Пожалуйста, введите свои данные в форму ниже</p>
-        <form class="contact-form">
-          <div class="form-row">
-            <input type="text" placeholder="Имя*" required>
-            <input type="text" placeholder="Фамилия">
-          </div>
-          <div class="form-row">
-            <input type="email" placeholder="Эл. почта*" required>
-            <input type="tel" placeholder="Телефон*" required>
-          </div>
-          <textarea placeholder="Ваш вопрос*" required></textarea>
-          <div class="form-disclaimer">
-            <button type="submit" class="secondary-button">Отправить</button>
-            <p>Нажимая на кнопку, вы принимаете условия <br><a href="#">пользовательского соглашения</a> и <a
-                href="#">политики конфиденциальности</a></p>
-          </div>
-        </form>
-      </div>
+      <h1>Остались вопросы?</h1>
+      <p>Мы с удовольствием подскажем! Пожалуйста, введите свои данные в форму ниже</p>
+      <?php include 'includes/contact-form.php'; ?>
     </section>
   </main>
 

@@ -1,3 +1,10 @@
+<?php
+require_once 'db.php';
+
+$menu_query = "SELECT id, name_for_menu FROM program_types ORDER BY id";
+$menu_result = mysqli_query($link, $menu_query);
+?>
+
 <nav class="navbar">
     <div class="container">
         <div class="logo-wrapper">
@@ -16,7 +23,17 @@
                     <a href="gallery.php">Галерея</a>
                 </div>
             </div>
-            <a href="programs.php">Программы</a>
+            <div class="nav-item">
+                <div class="nav-item-header">
+                    <a href="programs.php">Программы</a>
+                    <img src="images/arrow-down.svg" alt="" class="arrow">
+                </div>
+                <div class="submenu submenu-programs">
+                    <?php while ($type = mysqli_fetch_assoc($menu_result)): ?>
+                        <a href="programs.php#program-type-<?php echo $type['id']; ?>"><?php echo $type['name_for_menu']; ?></a>
+                    <?php endwhile; ?>
+                </div>
+            </div>
             <a href="contact.php">Контакты</a>
         </div>
         <button class="primary-button booking-button">Забронировать</button>
