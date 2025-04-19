@@ -10,6 +10,7 @@ $children = isset($_GET['children']) ? $_GET['children'] : 'any';
 $duration = isset($_GET['duration']) ? $_GET['duration'] : 'any';
 
 $total_programs_found = 0;
+$has_any_programs = false;
 
 // Fetch program types
 $types_query = "SELECT * FROM program_types ORDER BY id";
@@ -248,7 +249,9 @@ $program_types = [
             $programs_count = mysqli_num_rows($programs_result);
             $total_programs_found += $programs_count;
 
-            if ($programs_count > 0 || empty($search)):
+            // Only show the category if it has programs or if no filters are active
+            if ($programs_count > 0 || (empty($search) && $age === 'any' && $price === 'any' && $children === 'any' && $duration === 'any')):
+                $has_any_programs = true;
         ?>
             <div class="program-type" id="program-type-<?php echo $type['id']; ?>">
                 <div class="program-type-header">
@@ -297,7 +300,7 @@ $program_types = [
                                         <span class="value"><?php echo number_format($program['price'], 0, ',', ' '); ?>p</span>
                                     </div>
                                 </div>
-                                <button class="primary-button">Забронировать</button>
+                                <button class="primary-button" onclick="window.location.href='booking.php'">Забронировать</button>
                             </div>
                         </div>
                     <?php endwhile; ?>
@@ -307,7 +310,7 @@ $program_types = [
             endif;
         endwhile; 
         
-        if (!empty($search) && $total_programs_found === 0):
+        if (!empty($search) && !$has_any_programs):
         ?>
             <div class="no-results">
                 <p>Ничего не найдено</p>

@@ -1,0 +1,162 @@
+.main-section,
+header,
+footer {
+  background-color: #f9f9f9;
+  padding: 30px 15px;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+}
+
+.container h2,
+.header-desc {
+  text-align: center;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 20px;
+}
+
+footer p {
+  font-style: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+footer .container,
+header .container {
+  background-color: #f9f9f9;
+  box-shadow: none;
+  padding: 0;
+  max-width: 500px;
+  text-align: center;
+}
+
+footer,
+header {
+  padding: 0;
+  background-color: #f9f9f9;
+}
+
+/* footer {
+  padding-top: 260px;
+} */
+
+.form-wrapper {
+  padding: 10px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.box-input {
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.input {
+  width: 100%;
+  padding: 8px;
+  padding-right: 0px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+label {
+  top: -15px;
+  left: 0px;
+  font-size: 10px;
+  background-color: #fff;
+  padding: 0 3px;
+  color: #666;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.radio-box-input {
+  margin-top: 15px;
+}
+
+.radio-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-input-wrapper label {
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.inputs-wrapper {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.radio-input {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.radio-input label {
+  font-size: 12px;
+  color: #333;
+  margin: 0;
+}
+
+.button,
+.buttonlogout,
+.registrate-input {
+  background-color: #007bff;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.buttonlogout {
+  max-width: 200px;
+}
+
+.registrate-input {
+  margin-left: 10px;
+  width: 380px;
+}
+
+.button:hover,
+.registrate-input:hover {
+  background-color: #0056b3;
+}
+
+.enterOnAuth {
+  color: #333;
+  text-align: center;
+  font-size: 14px;
+}

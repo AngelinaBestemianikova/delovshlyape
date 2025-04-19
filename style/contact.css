@@ -78,6 +78,7 @@ textarea {
 
 /* Media Queries */
 @media (max-width: 768px) {
+    
     .contact {
         margin-top: 100px;
     }
@@ -115,6 +116,7 @@ textarea {
 .contact-page {
     max-width: 1200px;
     margin: 200px auto 0;
+    padding: 0 20px;
 }
 
 .contact-grid {
@@ -125,6 +127,10 @@ textarea {
     display: flex;
     justify-content: space-between;
     flex-direction: row;
+}
+
+.contact-info .info-section:first-of-type p {
+    padding-right: 20px;
 }
 
 .contact-info:first-of-type {
@@ -191,7 +197,7 @@ textarea {
     font-size: 20px;
 }
 
-.social-link span:hover {
+.social-link:hover span {
     color: var(--primary-color);
 }
 
@@ -219,61 +225,91 @@ textarea {
 }
 
 .map {
-    width: 588px;
-    height: auto;
+    width: 100%;
+    min-width: 588px;
+    margin-top: 80px;
+    max-height: 478px;
 }
 
 @media (max-width: 1024px) {
-    .contact-grid {
-        grid-template-columns: 1fr;
-        gap: 30px;
+    .contact-page {
+        margin-top: 150px;
     }
 
-    .map-section {
-        min-height: 350px;
+    .contact-info {
+        flex-direction: column;
+    }
+
+    .info-section {
+       max-width: 100%;
+    }
+
+    .contact-info .info-section:first-of-type p {
+        padding-right: 0;
+    }
+    
+    .contact-info .info-section {
+        margin-top: 70px;
+    }
+
+    .contact-info .info-section:first-of-type {
+        margin-top: 0;
+    }
+
+    .map {
+        height: auto;
+        max-height: 800px;
+        min-width: 200px;
+        margin-top: 20px;
     }
 }
 
 @media (max-width: 768px) {
-    .contact-page {
-        padding-top: 100px;
-    }
 
     .info-section {
-        padding: 20px;
+        width: 100%;
     }
 
     .info-section h2 {
         font-size: 32px;
     }
 
-    .social-links {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
+    .info-section p {
+        width: 100%;
     }
 
-    .map-section {
-        min-height: 300px;
+    .info-section p,
+    .detail .label,
+    .detail a,
+    .social-link span,
+    .transport-section h3,
+    .transport-section p,
+    .transport-section li {
+        font-size: 18px;
     }
 }
 
 @media (max-width: 480px) {
     .contact-page {
-        padding-top: 80px;
+        margin-top: 130px;
+        padding: 0 15px;
     }
 
-    .info-section h2 {
-        font-size: 28px;
+    .contact-info {
+        margin-bottom: 0;
     }
 
-    .social-links {
-        grid-template-columns: repeat(1, 1fr);
-        gap: 12px;
+    .info-block {
+        gap: 30px;
     }
 
-    .detail {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
+    .info-section p,
+    .detail .label,
+    .detail a,
+    .social-link span,
+    .transport-section h3,
+    .transport-section p,
+    .transport-section li {
+        font-size: 16px;
     }
 } 

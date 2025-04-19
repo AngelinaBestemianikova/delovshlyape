@@ -1,0 +1,98 @@
+.profile-section {
+    padding: 130px 20px 0;
+}
+
+.profile-section .container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-section h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-family: "Fantazyor";
+    font-size: 42px;
+}
+
+.profile-wrapper {
+    background-color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+}
+
+.label {
+    font-weight: 600;
+    min-width: 120px;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.logout-button {
+    background-color: #e74c3c;
+    color: #ffffff;
+    padding: 16px 32px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+    background-color: #c0392b;
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .profile-section {
+        padding: 100px 20px 0;
+    }
+
+    .profile-section h2 {
+        font-size: 36px;
+        margin-bottom: 30px;
+    }
+
+    .profile-wrapper {
+        padding: 30px;
+    }
+
+    .label {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-wrapper {
+        padding: 20px;
+    }
+
+    .info-item {
+        padding: 12px;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+} 

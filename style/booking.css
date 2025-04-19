@@ -1,0 +1,102 @@
+.booking {
+    padding: 130px 20px 0;
+    background-color: var(--background-color);
+}
+
+.booking .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.booking h1 {
+    text-align: center;
+    margin-bottom: 50px;
+    font-family: "Fantazyor";
+    font-size: 48px;
+}
+
+.booking-steps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-bottom: 130px;
+}
+
+.booking-steps-column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.step-content h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.step-content p {
+    font-size: 20px;
+}
+
+.booking-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 80px;
+    margin-bottom: 130px;
+}
+
+.booking-actions .primary-button {
+    padding: 16px 32px;
+    font-size: 18px;
+    min-width: 280px;
+}
+
+.step-content .secondary-button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .booking-steps {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .booking {
+        padding: 100px 20px 0;
+    }
+
+    .booking h1 {
+        font-size: 32px;
+        margin-bottom: 30px;
+        padding: 0;
+    }
+
+    .step-content h2 {
+        font-size: 20px;
+    }
+
+    .step-content p {
+        font-size: 16px;
+    }
+
+    .booking-actions {
+        margin-top: 60px;
+        margin-bottom: 100px;
+    }
+    
+    .booking-actions .primary-button {
+        padding: 14px 28px;
+        font-size: 16px;
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 480px) {
+    .booking-actions .primary-button {
+        width: 100%;
+        min-width: unset;
+    }
+} 

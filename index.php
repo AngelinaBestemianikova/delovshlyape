@@ -43,7 +43,7 @@
           незабываемые детские праздники. Наполняем их радостью, смехом и
           бесконечным весельем. Присоединяйтесь!
         </p>
-        <button class="primary-button">Выбрать программу</button>
+        <button class="primary-button" onclick="window.location.href='programs.php'">Выбрать программу</button>
       </div>
     </section>
 
@@ -79,7 +79,7 @@
                 <img src="<?php echo htmlspecialchars($program['path_image']); ?>" alt="" />
                 <h3><?php echo htmlspecialchars($program['name']); ?></h3>
                 <p><?php echo htmlspecialchars($program['description']); ?></p>
-                <button class="secondary-button">Подробнее</button>
+                <button class="secondary-button" onclick="window.location.href='programs.php#program-type-<?php echo $program['id']; ?>'">Подробнее</button>
               </div>
             <?php endwhile; ?>
           <?php endif; ?>

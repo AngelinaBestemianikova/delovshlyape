@@ -207,8 +207,6 @@
     font-family: "Nunito";
 }
 
-
-
 .filter-toggle {
     position: fixed;
     left: 20px;
@@ -249,6 +247,7 @@
     display: flex;
     flex-direction: column;
     z-index: 999;
+    overflow-y: auto;
 }
 
 .filter-panel.active {
@@ -261,6 +260,10 @@
     align-items: center;
     margin: 90px 0 20px;
     padding-bottom: 15px;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
 }
 
 .filter-header h3 {
@@ -281,6 +284,26 @@
 
 .filter-content {
     flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.filter-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.filter-content::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.filter-content::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-hover);
 }
 
 .filter-section {
@@ -312,6 +335,10 @@
     margin-top: auto;
     padding-top: 20px;
     border-top: 1px solid #E5E5E5;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    z-index: 1;
 }
 
 .apply-filters-btn {
@@ -323,7 +350,6 @@
     font-weight: 600;
     transition: background-color 0.3s ease;
 }
-
 
 @media (max-width: 1024px) {
     .programs-grid {
@@ -418,10 +444,11 @@
     .filter-panel {
         width: 260px;
         left: -260px;
+        padding: 15px;
     }
 
-    .filter-header h3 {
-        font-size: 20px;
+    .filter-header {
+        margin: 80px 0 15px;
     }
 
     .filter-section h4 {
@@ -439,7 +466,6 @@
 }
 
 @media (max-width: 480px) {
-
     h1 {
         font-size: 24px;
     }
@@ -511,7 +537,11 @@
     .filter-panel {
         width: 240px;
         left: -240px;
-        padding: 15px;
+        padding: 12px;
+    }
+
+    .filter-header {
+        margin: 70px 0 12px;
     }
 
     .filter-option {

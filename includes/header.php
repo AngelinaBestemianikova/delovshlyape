@@ -36,7 +36,7 @@ $menu_result = mysqli_query($link, $menu_query);
             </div>
             <a href="contact.php">Контакты</a>
         </div>
-        <button class="primary-button booking-button">Забронировать</button>
+        <button class="primary-button booking-button" onclick="window.location.href='booking.php'">Забронировать</button>
         <div class="burger-menu">
             <img src="images/burger.svg" alt="Menu" class="burger-icon">
             <img src="images/cross.svg" alt="Close" class="cross-icon">

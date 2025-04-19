@@ -8,7 +8,7 @@
             <a href="#main">Главная</a>
             <a href="#about">О нас</a>
             <a href="#programs">Программы</a>
-            <a href="#booking">Забронировать</a>
+            <a href="booking.php">Забронировать</a>
             <a href="#contact">Контакты</a>
           </div>
         </div>

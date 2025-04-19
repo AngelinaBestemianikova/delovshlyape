@@ -15,9 +15,8 @@
 </head>
 
 <body>
-<?php include 'includes/header.php'; ?>
-
-<?php
+<?php 
+include 'includes/header.php'; 
 require_once 'includes/db.php';
 
 // Fetch team members
@@ -126,7 +125,7 @@ $reviews_result = mysqli_query($link, $reviews_query);
             <h1>Мечтаете о незабываемом празднике для ребенка?</h1>
             <p>Тогда наша команда профессионалов с радостью возьмется за организацию незабываемого торжества. Ознакомьтесь с нашими программами и выберите то, что больше всего подходит вам и вашему ребенку!
             </div>
-        <button class="primary-button">Выбрать программу</button>
+        <button class="primary-button" onclick="window.location.href='programs.php'">Выбрать программу</button>
     </div>
 </section>
 
