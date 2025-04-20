@@ -34,6 +34,7 @@ $menu_result = mysqli_query($link, $menu_query);
                     <?php endwhile; ?>
                 </div>
             </div>
+            <a href="profile.php">Профиль</a>
             <a href="contact.php">Контакты</a>
         </div>
         <button class="primary-button booking-button" onclick="window.location.href='booking.php'">Забронировать</button>

@@ -300,7 +300,7 @@ $program_types = [
                                         <span class="value"><?php echo number_format($program['price'], 0, ',', ' '); ?>p</span>
                                     </div>
                                 </div>
-                                <button class="primary-button" onclick="window.location.href='booking.php'">Забронировать</button>
+                                <button class="primary-button" onclick="window.location.href='booking.php?program=<?php echo urlencode($program['name']); ?>'">Забронировать</button>
                             </div>
                         </div>
                     <?php endwhile; ?>

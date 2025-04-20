@@ -297,9 +297,8 @@ footer .container {
 
 @media (max-width: 1260px) {
     .nav-links {
-        gap: 50px;
+        gap: 35px;
     }
-
 
     .footer-content {
         gap: 40px;

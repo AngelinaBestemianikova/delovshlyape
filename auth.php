@@ -2,11 +2,6 @@
 session_start();
 include __DIR__ . './includes/db.php';
 
-// if (isset($_SESSION['name'])) {
-//     header('Location: profile.php'); 
-//     exit;
-// }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
 

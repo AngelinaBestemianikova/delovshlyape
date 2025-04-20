@@ -2,8 +2,11 @@
 session_start();
 include __DIR__ . '/includes/db.php';
 
+// Get redirect URL if set
+$redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'profile.php';
+
 if (isset($_SESSION['name'])) {
-    header('Location: profile.php');
+    header('Location: ' . $redirect);
     exit;
 }
 
@@ -29,8 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $response["errors"]["email"] = "Введенная почта не соответствует требованиям.";
             $response["passed"] = false;
         } else {
-            $query = "SELECT id FROM users WHERE email='$email'";
-            $result = mysqli_query($link, $query);
+            $query = "SELECT id FROM users WHERE email=?";
+            $stmt = mysqli_prepare($link, $query);
+            mysqli_stmt_bind_param($stmt, "s", $email);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
             if (!$result || mysqli_num_rows($result) === 0) {
                 $response["errors"]["email"] = "Данная почта не зарегистрирована.";
                 $response["passed"] = false;
@@ -43,11 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $response["errors"]["password"] = "Пароль должен содержать не менее 4 символов и не включать специальные символы.";
             $response["passed"] = false;
         } else if ($validate_field === 'all') {
-            // Only check password match on full form submission
-            $query = "SELECT password_hash, password_salt FROM users WHERE email='$email'";
-            $result = mysqli_query($link, $query);
-            if ($result && mysqli_num_rows($result) > 0) {
-                $row = mysqli_fetch_assoc($result);
+            $query = "SELECT id, password_hash, password_salt FROM users WHERE email=?";
+            $stmt = mysqli_prepare($link, $query);
+            mysqli_stmt_bind_param($stmt, "s", $email);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            if ($result && $row = mysqli_fetch_assoc($result)) {
                 if (md5(md5($password) . $row['password_salt']) !== $row['password_hash']) {
                     $response["errors"]["password"] = "Неверный пароль.";
                     $response["passed"] = false;
@@ -58,13 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     // Only perform login on form submission
     if ($is_submit && $validate_field === 'all' && $response["passed"]) {
-        $query = "SELECT id, first_name, last_name FROM users WHERE email='$email'";
-        $result = mysqli_query($link, $query);
-        if ($result && mysqli_num_rows($result) > 0) {
-            $row = mysqli_fetch_assoc($result);
+        $query = "SELECT id, first_name, last_name FROM users WHERE email=?";
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result && $row = mysqli_fetch_assoc($result)) {
             $_SESSION["name"] = $row['first_name'];
             $_SESSION["lastname"] = $row['last_name'];
             $_SESSION["client_id"] = $row['id'];
+            $response["redirect"] = $redirect;
         } else {
             $response["errors"]["database"] = "Ошибка при входе в систему.";
             $response["passed"] = false;

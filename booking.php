@@ -1,3 +1,29 @@
+<?php
+session_start();
+require_once 'includes/db.php';
+
+// Check if program is specified
+$program = isset($_GET['program']) ? $_GET['program'] : '';
+
+// If user is not logged in, redirect to login with return URL
+if (!isset($_SESSION['name'])) {
+    $redirect_url = 'login.php?redirect=' . urlencode('booking.php' . ($program ? '?program=' . urlencode($program) : ''));
+    header("Location: " . $redirect_url);
+    exit();
+}
+
+// Get user data from database
+$user_data = null;
+if (isset($_SESSION['client_id'])) {
+    $user_id = $_SESSION['client_id'];
+    $query = "SELECT first_name, last_name, email, phone FROM users WHERE id = ?";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user_data = mysqli_fetch_assoc($result);
+}
+?>
 <!DOCTYPE html>
 <html lang="ru">
 
@@ -6,6 +32,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Незабываемые праздники</title>
     <link rel="stylesheet" href="style/general.css">
+    <link rel="stylesheet" href="style/contact.css">
     <link rel="stylesheet" href="style/booking.css">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,9 +40,7 @@
 </head>
 
 <body>
-    <?php 
-    include 'includes/header.php';
-    require_once 'includes/db.php'; ?>
+    <?php include 'includes/header.php'; ?>
 
     <section class="booking">
         <div class="container">
@@ -57,8 +82,52 @@
                 </div>
             </div>
             
-            <div class="booking-actions">
-                <button class="primary-button" onclick="window.location.href='login.php'">В личный кабинет</button>
+            <div class="booking-form-section">
+                <h1>Заявка на бронирование</h1>
+                <form class="booking-form" action="process_booking.php" method="POST">
+                    <div class="form-row">
+                        <input type="text" name="name" placeholder="Имя*" required 
+                            value="<?php echo isset($user_data['first_name']) ? htmlspecialchars($user_data['first_name']) : ''; ?>">
+                        <input type="text" name="surname" placeholder="Фамилия" required
+                            value="<?php echo isset($user_data['last_name']) ? htmlspecialchars($user_data['last_name']) : ''; ?>">
+                    </div>
+                    
+                    <div class="form-row">
+                        <input type="email" name="email" placeholder="Эл. почта*" required
+                            value="<?php echo isset($user_data['email']) ? htmlspecialchars($user_data['email']) : ''; ?>">
+                        <input type="tel" name="phone" placeholder="Телефон*" required
+                            value="<?php echo isset($user_data['phone']) ? htmlspecialchars($user_data['phone']) : ''; ?>">
+                    </div>
+
+                    <div class="form-row form-row-special">
+                        <input type="text" name="program" placeholder="Название программы" required
+                            value="<?php echo htmlspecialchars($program); ?>" readonly>
+                    </div>
+                    
+                    <div class="form-row form-row-special">
+                        <input type="text" name="celebrant" placeholder="У кого планируется праздник?" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <input type="number" name="age" placeholder="Сколько лет будет имениннику?" required>
+                        <input type="number" name="guests" placeholder="Планируемое кол-во гостей" required>
+                    </div>
+                    
+                    <div class="form-row form-row-special">
+                        <input type="text" name="location" placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
+                    </div>
+                    
+                    <div class="form-row form-row-special">
+                        <input type="date" name="event_date" placeholder="Планируемая дата праздника" required>
+                    </div>
+                    
+                    <textarea name="wishes" placeholder="Пожелания к празднику"></textarea>
+
+                    <div class="form-disclaimer">
+                        <button type="submit" class="primary-button">Отправить</button>
+                        <p>Нажимая на кнопку, вы принимаете условия <a href="#">пользовательского соглашения</a> и <a href="#">политики конфиденциальности</a></p>
+                    </div>
+                </form>
             </div>
         </div>
     </section>
