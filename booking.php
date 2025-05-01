@@ -23,6 +23,10 @@ if (isset($_SESSION['client_id'])) {
     $result = mysqli_stmt_get_result($stmt);
     $user_data = mysqli_fetch_assoc($result);
 }
+
+// Get all programs for the dropdown
+$programs_query = "SELECT id, name FROM programs ORDER BY name";
+$programs_result = mysqli_query($link, $programs_query);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -36,7 +40,12 @@ if (isset($_SESSION['client_id'])) {
     <link rel="stylesheet" href="style/booking.css">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 </head>
 
 <body>
@@ -45,7 +54,7 @@ if (isset($_SESSION['client_id'])) {
     <section class="booking">
         <div class="container">
             <h1>Инструкция <br>по бронированию</h1>
-            
+
             <div class="booking-steps">
                 <div class="booking-steps-column">
                     <div class="step-content">
@@ -55,15 +64,17 @@ if (isset($_SESSION['client_id'])) {
 
                     <div class="step-content">
                         <h2>Шаг 2. Заполните форму</h2>
-                        <p>Укажите контактные данные (ваше имя, фамилию, почтовый адрес, номер телефона) и данные о мероприятии (дату мероприятия, место проведения, количество гостей и т.д.)</p>
+                        <p>Укажите контактные данные (ваше имя, фамилию, почтовый адрес, номер телефона) и данные о
+                            мероприятии (дату мероприятия, место проведения, количество гостей и т.д.)</p>
                     </div>
 
                     <div class="step-content">
                         <h2>Шаг 3. Подтверждение</h2>
-                        <p>После отправки формы наш организатор свяжется с вами, чтобы подтвердить бронирование и обсудить детали</p>
+                        <p>После отправки формы наш организатор свяжется с вами, чтобы подтвердить бронирование и
+                            обсудить детали</p>
                     </div>
                 </div>
-                
+
                 <div class="booking-steps-column">
                     <div class="step-content">
                         <h2>Шаг 4. Договор</h2>
@@ -72,26 +83,27 @@ if (isset($_SESSION['client_id'])) {
 
                     <div class="step-content">
                         <h2>Шаг 5. Подготовка</h2>
-                        <p>За несколько дней до мероприятия мы уточним все детали и подтвердим время начала шоу-программы</p>
+                        <p>За несколько дней до мероприятия мы уточним все детали и подтвердим время начала
+                            шоу-программы</p>
                     </div>
-                    
+
                     <div class="step-content">
                         <h2>Шаг 6. Праздник начинается!</h2>
                         <p>В назначенный день наши аниматоры прибудут и устроят незабываемый праздник!</p>
                     </div>
                 </div>
             </div>
-            
+
             <div class="booking-form-section">
                 <h1>Заявка на бронирование</h1>
                 <form class="booking-form" action="process_booking.php" method="POST">
                     <div class="form-row">
-                        <input type="text" name="name" placeholder="Имя*" required 
+                        <input type="text" name="name" placeholder="Имя*" required
                             value="<?php echo isset($user_data['first_name']) ? htmlspecialchars($user_data['first_name']) : ''; ?>">
                         <input type="text" name="surname" placeholder="Фамилия" required
                             value="<?php echo isset($user_data['last_name']) ? htmlspecialchars($user_data['last_name']) : ''; ?>">
                     </div>
-                    
+
                     <div class="form-row">
                         <input type="email" name="email" placeholder="Эл. почта*" required
                             value="<?php echo isset($user_data['email']) ? htmlspecialchars($user_data['email']) : ''; ?>">
@@ -100,32 +112,42 @@ if (isset($_SESSION['client_id'])) {
                     </div>
 
                     <div class="form-row form-row-special">
-                        <input type="text" name="program" placeholder="Название программы" required
-                            value="<?php echo htmlspecialchars($program); ?>" readonly>
+                        <select name="program" id="program-select" required>
+                            <option value="">Выберите программу</option>
+                            <?php while ($program_row = mysqli_fetch_assoc($programs_result)): ?>
+                                <option value="<?php echo htmlspecialchars($program_row['name']); ?>" <?php echo ($program == $program_row['name']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($program_row['name']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
                     </div>
-                    
+
                     <div class="form-row form-row-special">
                         <input type="text" name="celebrant" placeholder="У кого планируется праздник?" required>
                     </div>
-                    
+
                     <div class="form-row">
-                        <input type="number" name="age" placeholder="Сколько лет будет имениннику?" required>
-                        <input type="number" name="guests" placeholder="Планируемое кол-во гостей" required>
+                        <input type="number" min=1 max=25 name="age" placeholder="Сколько лет имениннику?" required>
+                        <input type="number" min=1 max=300 name="guests" placeholder="Планируемое кол-во гостей"
+                            required>
                     </div>
-                    
+
                     <div class="form-row form-row-special">
-                        <input type="text" name="location" placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
+                        <input type="text" name="location"
+                            placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
                     </div>
-                    
+
                     <div class="form-row form-row-special">
-                        <input type="date" name="event_date" placeholder="Планируемая дата праздника" required>
+                        <input type="date" id="event_date" name="event_date" placeholder="Планируемая дата праздника"
+                            required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
                     </div>
-                    
+
                     <textarea name="wishes" placeholder="Пожелания к празднику"></textarea>
 
                     <div class="form-disclaimer">
                         <button type="submit" class="primary-button">Отправить</button>
-                        <p>Нажимая на кнопку, вы принимаете условия <a href="#">пользовательского соглашения</a> и <a href="#">политики конфиденциальности</a></p>
+                        <p>Нажимая на кнопку, вы принимаете условия <a href="#">пользовательского соглашения</a> и <a
+                                href="#">политики конфиденциальности</a></p>
                     </div>
                 </form>
             </div>
@@ -133,5 +155,52 @@ if (isset($_SESSION['client_id'])) {
     </section>
 
     <?php include 'includes/footer.php'; ?>
+
+    <!-- JS-логика -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const programSelect = document.getElementById("program-select");
+            const dateInput = document.getElementById("event_date");
+
+            let fpInstance = null;
+
+            function updateCalendar(programName) {
+                const formData = new FormData();
+                formData.append("program", programName);
+                formData.append("get_unavailable_dates", "1"); // просто маркер, чтобы отличать
+
+                fetch("booking-handler.php", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.unavailable_dates) {
+                            if (fpInstance) {
+                                fpInstance.destroy(); // переинициализация
+                            }
+
+                            fpInstance = flatpickr(dateInput, {
+                                minDate: "today",
+                                dateFormat: "Y-m-d",
+                                disable: data.unavailable_dates
+                            });
+                        }
+                    });
+            }
+
+            programSelect.addEventListener("change", () => {
+                const selectedProgram = programSelect.value;
+                if (selectedProgram) {
+                    updateCalendar(selectedProgram);
+                }
+            });
+
+            if (programSelect.value) {
+                updateCalendar(programSelect.value);
+            }
+        });
+    </script>
 </body>
-</html> 
+
+</html>

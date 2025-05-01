@@ -3,7 +3,7 @@
 }
 
 .profile-section .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -14,11 +14,14 @@
     font-size: 42px;
 }
 
+/* User info styles */
 .profile-wrapper {
     background-color: #fff;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     padding: 30px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .profile-info {
@@ -37,7 +40,7 @@
     border-radius: 12px;
 }
 
-.label {
+.info-item .label {
     font-weight: 600;
     min-width: 120px;
 }
@@ -61,6 +64,98 @@
     transform: scale(1.02);
 }
 
+/* Bookings section styles */
+.bookings-section {
+    border-radius: 20px;
+    padding: 30px;
+    margin: 40px auto 0;
+}
+
+.bookings-section h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 42px;
+    color: #333;
+    font-family: "Fantazyor";
+}
+
+.no-bookings {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
+}
+
+.bookings-list {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.booking-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.booking-header h4 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+.booking-date {
+    padding: 5px 10px;
+    margin-left: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #666;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.booking-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.booking-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+.booking-detail-item .label {
+    font-weight: 600;
+    min-width: 120px;
+    color: #666;
+}
+
+.booking-detail-item .value {
+    flex: 1;
+    color: #333;
+}
+
+.booking-actions {
+    margin-top: 15px;
+    text-align: right;
+}
+
+/* Responsive styles */
 @media (max-width: 768px) {
     .profile-section {
         padding: 100px 20px 0;
@@ -72,21 +167,7 @@
     }
 
     .profile-wrapper {
-        padding: 30px;
-    }
-
-    .label {
-        min-width: auto;
-    }
-}
-
-@media (max-width: 480px) {
-    .profile-wrapper {
         padding: 20px;
-    }
-
-    .info-item {
-        padding: 12px;
     }
 
     .info-item {
@@ -94,4 +175,148 @@
         align-items: flex-start;
         gap: 8px;
     }
+
+    .info-item .label {
+        min-width: auto;
+    }
+
+    .bookings-list {
+        grid-template-columns: 1fr;
+    }
+    .bookings-section {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-section {
+        padding: 80px 15px 0;
+    }
+
+    .profile-section h2 {
+        font-size: 32px;
+    }
+
+    .booking-card {
+        padding: 15px;
+    }
+
+    .booking-detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .booking-detail-item .label {
+        min-width: auto;
+    }
+
+    .bookings-section {
+        padding: 0px;
+    }
+
+    .booking-actions {
+        text-align: center;
+    }
+
+} 
+
+.cancel-booking-btn,
+.leave-review-btn {
+    padding: 16px 32px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    font-family: "Nunito";
+    font-size: 16px;
+    transition: transform 0.3s;
+}
+
+.cancel-booking-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.cancel-booking-btn:hover {
+    transform: scale(1.02);
+}
+
+.leave-review-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.leave-review-btn:hover {
+    transform: scale(1.02);
+}
+
+/* Модальное окно для отзыва */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    max-width: 600px;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 8px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.submit-review-btn {
+    background-color: #4CAF50;
+    color: white;
+    font-family: "Nunito";
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+.submit-review-btn:hover {
+    background-color: #45a049;
 } 
