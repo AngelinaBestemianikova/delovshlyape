@@ -248,7 +248,18 @@ unset($_SESSION['booking_success']);
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                alert('Отзыв успешно отправлен!');
+                // Находим кнопку "Оставить отзыв" для текущего бронирования
+                const bookingId = formData.get('booking_id');
+                const reviewButton = document.querySelector(`.leave-review-btn[data-booking-id="${bookingId}"]`);
+                if (reviewButton) {
+                    reviewButton.textContent = 'Отзыв оставлен';
+                    reviewButton.style.backgroundColor = '#ccc';
+                    reviewButton.style.cursor = 'default';
+                    reviewButton.disabled = true;
+                }
+                // Закрываем модальное окно
+                modal.style.display = 'none';
             } else {
                 alert(data.message || 'Произошла ошибка при отправке отзыва');
             }

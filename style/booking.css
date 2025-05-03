@@ -140,4 +140,11 @@ textarea {
     .form-row {
         width: 100%;
     }
+}
+
+.field-error {
+    color: #c62828;
+    font-size: 12px;
+    margin-top: 2px;
+    display: block;
 } 
