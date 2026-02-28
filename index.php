@@ -16,14 +16,14 @@
 </head>
 
 <body>
-  <?php 
+  <?php
   include 'includes/header.php';
   require_once 'includes/db.php';
-  
+
   // Fetch program types
   $programs_query = "SELECT * FROM program_types ORDER BY id";
   $programs_result = mysqli_query($link, $programs_query);
-  
+
   // Fetch latest review
   $review_query = "SELECT r.*, u.first_name as name, u.path_image as avatar 
                    FROM reviews r 
@@ -79,7 +79,8 @@
                 <img src="<?php echo htmlspecialchars($program['path_image']); ?>" alt="" />
                 <h3><?php echo htmlspecialchars($program['name']); ?></h3>
                 <p><?php echo htmlspecialchars($program['description']); ?></p>
-                <button class="secondary-button" onclick="window.location.href='programs.php#program-type-<?php echo $program['id']; ?>'">Подробнее</button>
+                <button class="secondary-button"
+                  onclick="window.location.href='programs.php#program-type-<?php echo $program['id']; ?>'">Подробнее</button>
               </div>
             <?php endwhile; ?>
           <?php endif; ?>
@@ -147,7 +148,8 @@
           <div class="review-content">
             <p><?php echo htmlspecialchars($latest_review['comment']); ?></p>
             <div class="reviewer">
-              <img src="<?php echo htmlspecialchars($latest_review['avatar']); ?>" alt="<?php echo htmlspecialchars($latest_review['name']); ?>" class="reviewer-img">
+              <img src="<?php echo htmlspecialchars($latest_review['avatar']); ?>"
+                alt="<?php echo htmlspecialchars($latest_review['name']); ?>" class="reviewer-img">
               <p><?php echo htmlspecialchars($latest_review['name']); ?></p>
             </div>
           </div>

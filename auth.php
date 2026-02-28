@@ -106,7 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     <link rel="stylesheet" href="style/auth.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+        rel="stylesheet">
     <title>Регистрация</title>
 </head>
 
@@ -149,7 +151,7 @@ include __DIR__ . './elements/auth.php';
                         <span id="secondpassword-error" class="error"></span>
                     </div>
                     <div class="box-input">
-                        <input placeholder="375" class="input" name="phone" type="text" required>
+                        <input placeholder="+375" class="input" name="phone" type="text" required>
                         <label>Введите номер телефона</label>
                         <span id="phone-error" class="error"></span>
                     </div>

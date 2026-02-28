@@ -99,16 +99,20 @@ $programs_result = mysqli_query($link, $programs_query);
                 <form class="booking-form" action="process_booking.php" method="POST">
                     <div class="form-row">
                         <input type="text" name="name" placeholder="Имя*"
-                            value="<?php echo isset($user_data['first_name']) ? htmlspecialchars($user_data['first_name']) : ''; ?>" readonly>
+                            value="<?php echo isset($user_data['first_name']) ? htmlspecialchars($user_data['first_name']) : ''; ?>"
+                            readonly>
                         <input type="text" name="surname" placeholder="Фамилия"
-                            value="<?php echo isset($user_data['last_name']) ? htmlspecialchars($user_data['last_name']) : ''; ?>" readonly>
+                            value="<?php echo isset($user_data['last_name']) ? htmlspecialchars($user_data['last_name']) : ''; ?>"
+                            readonly>
                     </div>
 
                     <div class="form-row">
                         <input type="email" name="email" placeholder="Эл. почта*"
-                            value="<?php echo isset($user_data['email']) ? htmlspecialchars($user_data['email']) : ''; ?>" readonly>
+                            value="<?php echo isset($user_data['email']) ? htmlspecialchars($user_data['email']) : ''; ?>"
+                            readonly>
                         <input type="tel" name="phone" placeholder="Телефон*"
-                            value="<?php echo isset($user_data['phone']) ? htmlspecialchars($user_data['phone']) : ''; ?>" readonly>
+                            value="<?php echo isset($user_data['phone']) ? htmlspecialchars($user_data['phone']) : ''; ?>"
+                            readonly>
                     </div>
 
                     <div class="form-row form-row-special">
@@ -122,50 +126,61 @@ $programs_result = mysqli_query($link, $programs_query);
                                 <?php endwhile; ?>
                             </select>
                             <?php if (isset($_SESSION['booking_errors']['program'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['program']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['program']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="form-row form-row-special">
                         <div class="field-group">
-                            <input type="text" name="celebrant" placeholder="У кого планируется праздник?" required>
+                            <input type="text" name="celebrant"
+                                placeholder="У кого планируется праздник? (например: девочка Аня, любит петь)" required>
                             <?php if (isset($_SESSION['booking_errors']['celebrant'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['celebrant']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['celebrant']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="field-group">
-                            <input type="number" min="1" max="25" name="age" placeholder="Сколько лет имениннику?" required>
+                            <input type="number" min="1" max="25" name="age" placeholder="Сколько лет имениннику?"
+                                required>
                             <?php if (isset($_SESSION['booking_errors']['age'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['age']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['age']); ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="field-group">
-                            <input type="number" min="1" max="200" name="guests" placeholder="Планируемое кол-во гостей" required>
+                            <input type="number" min="1" max="200" name="guests" placeholder="Планируемое кол-во гостей"
+                                required>
                             <?php if (isset($_SESSION['booking_errors']['guests'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['guests']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['guests']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="form-row form-row-special">
                         <div class="field-group">
-                            <input type="text" name="location" placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
+                            <input type="text" name="location"
+                                placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
                             <?php if (isset($_SESSION['booking_errors']['location'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['location']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['location']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
 
                     <div class="form-row form-row-special">
                         <div class="field-group">
-                            <input type="date" id="event_date" name="event_date" placeholder="Планируемая дата праздника" required
+                            <input type="date" id="event_date" name="event_date"
+                                placeholder="Планируемая дата праздника" required
                                 min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
                             <?php if (isset($_SESSION['booking_errors']['event_date'])): ?>
-                                <span class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['event_date']); ?></span>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['event_date']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -174,7 +189,8 @@ $programs_result = mysqli_query($link, $programs_query);
 
                     <div class="form-disclaimer">
                         <button type="submit" class="primary-button">Отправить</button>
-                        <p>Нажимая на кнопку, вы принимаете условия <a href="#">пользовательского соглашения</a> и <a href="#">политики конфиденциальности</a></p>
+                        <p>Нажимая на кнопку, вы принимаете условия <a href="#">пользовательского соглашения</a> и <a
+                                href="#">политики конфиденциальности</a></p>
                     </div>
                 </form>
                 <?php unset($_SESSION['booking_errors']); ?>

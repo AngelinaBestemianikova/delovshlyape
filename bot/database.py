@@ -9,11 +9,11 @@ class Database:
     def connect(self):
         try:
             self.connection = mysql.connector.connect(
-                host="localhost",
-                database="Delovshlyape",
-                user="root",
-                password="",
-                port=3306
+                host=DB_CONFIG['host'],
+                database=DB_CONFIG['database'],
+                user=DB_CONFIG['user'],
+                password=DB_CONFIG['password'],
+                port=DB_CONFIG['port']
             )
             return True
         except Exception as e:
@@ -43,7 +43,7 @@ class Database:
         try:
             cursor = self.connection.cursor(dictionary=True)
             cursor.execute(
-                "SELECT password, salt FROM users WHERE email = %s", 
+                "SELECT password_hash, password_salt FROM users WHERE email = %s", 
                 (email,)
             )
             user = cursor.fetchone()
@@ -54,11 +54,10 @@ class Database:
             # Повторяем логику хеширования из PHP
             hashed_input = hashlib.md5(
                 hashlib.md5(password.encode()).hexdigest().encode() + 
-                user['salt'].encode()
+                str(user['password_salt']).encode()
             ).hexdigest()
-            # hexdigest() возвращает строковое представление хеша
-            # возвращает сравнение
-            return hashed_input == user['password']
+            
+            return hashed_input == user['password_hash']
             
         except Exception as e:
             print(f"Ошибка проверки пароля: {e}")
@@ -75,12 +74,12 @@ class Database:
         try:
             cursor = self.connection.cursor()
             query = """
-                SELECT r.id, y.name as yacht_name, r.start_date, r.end_date
-                FROM reservations r
-                JOIN users u ON r.user_id = u.id
-                JOIN yachts y ON r.yacht_id = y.id
+                SELECT b.id, p.name as program_name, b.event_date, b.event_date as end_date
+                FROM bookings b
+                JOIN users u ON b.user_id = u.id
+                JOIN programs p ON b.program_id = p.id
                 WHERE u.email = %s
-                ORDER BY r.start_date DESC  
+                ORDER BY b.event_date DESC  
             """
             cursor.execute(query, (email,))
             return cursor.fetchall()
@@ -98,7 +97,7 @@ class Database:
 
         try:
             cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+            cursor.execute("DELETE FROM bookings WHERE id = %s", (reservation_id,))
             self.connection.commit()
             return cursor.rowcount > 0
         except Exception as e:
