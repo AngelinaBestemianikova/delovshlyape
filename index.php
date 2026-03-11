@@ -68,6 +68,15 @@
         </div>
     </section>
 
+    <section>
+      <div class="video-container">
+        <video id="myVideo" muted loop playsinline controls>
+          <source src="./extra/video.mp4" type="video/mp4">
+          Ваш браузер не поддерживает видео.
+        </video>
+      </div>
+    </section>
+
     <section id="programs" class="programs">
       <div class="container">
         <h1>Программы</h1>
@@ -277,6 +286,21 @@
           item.classList.toggle('active');
         });
       });
+
+      const video = document.getElementById("myVideo");
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            video.play();
+          } else {
+            video.pause();
+          }
+        });
+      }, { threshold: 0.5 });
+
+      observer.observe(video);
+
     });
   </script>
 </body>

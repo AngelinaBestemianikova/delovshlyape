@@ -5,11 +5,19 @@ $menu_query = "SELECT id, name_for_menu FROM program_types ORDER BY id";
 $menu_result = mysqli_query($link, $menu_query);
 ?>
 
+<div id="preloader">
+    <div id="loader-animation"></div>
+</div>
+
 <nav class="navbar">
     <div class="container">
+
+
         <div class="logo-wrapper">
-            <img src="images/logo.svg" alt="Logo" class="logo-main">
-            <img src="images/logo_footer.png" alt="Logo" class="logo-mobile">
+            <a href="index.php">
+                <img src="images/logo.svg" alt="Logo" class="logo-main">
+                <img src="images/logo_footer.png" alt="Logo" class="logo-mobile">
+            </a>
         </div>
         <div class="nav-links">
             <a href="index.php">Главная</a>
@@ -30,14 +38,16 @@ $menu_result = mysqli_query($link, $menu_query);
                 </div>
                 <div class="submenu submenu-programs">
                     <?php while ($type = mysqli_fetch_assoc($menu_result)): ?>
-                        <a href="programs.php#program-type-<?php echo $type['id']; ?>"><?php echo $type['name_for_menu']; ?></a>
+                        <a
+                            href="programs.php#program-type-<?php echo $type['id']; ?>"><?php echo $type['name_for_menu']; ?></a>
                     <?php endwhile; ?>
                 </div>
             </div>
             <a href="profile.php">Профиль</a>
             <a href="contact.php">Контакты</a>
         </div>
-        <button class="primary-button booking-button" onclick="window.location.href='booking.php'">Забронировать</button>
+        <button class="primary-button booking-button"
+            onclick="window.location.href='booking.php'">Забронировать</button>
         <div class="burger-menu">
             <img src="images/burger.svg" alt="Menu" class="burger-icon">
             <img src="images/cross.svg" alt="Close" class="cross-icon">

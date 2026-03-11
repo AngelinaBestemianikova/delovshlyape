@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Если файл реально существует, используем его
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Все остальные запросы отправляем на index.php
+RewriteRule ^.*$ 404.php [QSA,L]

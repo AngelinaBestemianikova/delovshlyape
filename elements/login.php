@@ -6,7 +6,11 @@
             .then(response => response.json())
             .then(data => {
                 if (data.loggedIn) {
-                    window.location.href = 'profile.php';
+                    if (data.is_admin) {
+                        window.location.href = 'admin.php';
+                    } else {
+                        window.location.href = 'profile.php';
+                    }
                 }
             });
 
@@ -77,7 +81,13 @@
                         alert("Вы успешно вошли!");
                         count++;
                     }
-                    window.location.href = 'profile.php';
+
+                    // Используем redirect с сервера
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        window.location.href = 'profile.php';
+                    }
                 } else {
                     // Show all errors on submit
                     Object.entries(response.errors || {}).forEach(([field, error]) => {

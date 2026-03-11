@@ -1,55 +1,55 @@
 .profile-section {
-    padding: 130px 20px 0;
+  padding: 130px 20px 0;
 }
 
 .profile-section .container {
-    max-width: 1200px;
-    margin: 0 auto;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .profile-section h2 {
-    text-align: center;
-    margin-bottom: 40px;
-    font-family: "Fantazyor";
-    font-size: 42px;
+  text-align: center;
+  margin-bottom: 40px;
+  font-family: "Fantazyor";
+  font-size: 42px;
 }
 
 /* User info styles */
 .profile-wrapper {
-    background-color: #fff;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    padding: 30px;
-    max-width: 600px;
-    margin: 0 auto;
+  background-color: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .profile-info {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 30px;
 }
 
 .info-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 16px;
-    background-color: #f8f9fa;
-    border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
 }
 
 .info-item .label {
-    font-weight: 600;
-    min-width: 120px;
+  font-weight: 600;
+  min-width: 120px;
 }
 
 .profile-actions {
-    display: flex;
-    justify-content: center;
+  display: flex;
+  justify-content: center;
 }
-
+/* 
 .logout-button {
     background-color: #e74c3c;
     color: #ffffff;
@@ -62,261 +62,292 @@
 
 .logout-button:hover {
     transform: scale(1.02);
+} */
+
+/* --- Унифицированный стиль для функциональных кнопок --- */
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Nunito", sans-serif;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  line-height: 1;
+  text-decoration: none;
+  pointer-events: auto;
+  z-index: 1;
 }
 
+/* Эффект наведения (кроме вкладок-текста) */
+.logout-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.logout-button {
+  background-color: #e74c3c;
+  color: #ffffff;
+  padding: 17px 40px;
+  font-size: 16px;
+}
 /* Bookings section styles */
 .bookings-section {
-    border-radius: 20px;
-    padding: 30px;
-    margin: 40px auto 0;
+  border-radius: 20px;
+  padding: 30px;
+  margin: 40px auto 0;
 }
 
 .bookings-section h2 {
-    margin-bottom: 20px;
-    text-align: center;
-    font-size: 42px;
-    color: #333;
-    font-family: "Fantazyor";
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 42px;
+  color: #333;
+  font-family: "Fantazyor";
 }
 
 .no-bookings {
-    text-align: center;
-    color: #666;
-    font-style: italic;
-    padding: 20px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
 }
 
 .bookings-list {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
 }
 
 .booking-card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 20px;
-    transition: transform 0.3s, box-shadow 0.3s;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
 }
 
 .booking-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
 
 .booking-header h4 {
-    margin: 0;
-    font-size: 18px;
-    color: #333;
-    font-weight: 600;
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
 }
 
 .booking-date {
-    padding: 5px 10px;
-    margin-left: 10px;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #666;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 5px 10px;
+  margin-left: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #666;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .booking-details {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .booking-detail-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    background-color: #fff;
-    border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background-color: #fff;
+  border-radius: 8px;
 }
 
 .booking-detail-item .label {
-    font-weight: 600;
-    min-width: 120px;
-    color: #666;
+  font-weight: 600;
+  min-width: 120px;
+  color: #666;
 }
 
 .booking-detail-item .value {
-    flex: 1;
-    color: #333;
+  flex: 1;
+  color: #333;
 }
 
 .booking-actions {
-    margin-top: 15px;
-    text-align: right;
+  margin-top: 15px;
+  text-align: center;
 }
 
 /* Responsive styles */
 @media (max-width: 768px) {
-    .profile-section {
-        padding: 100px 20px 0;
-    }
+  .profile-section {
+    padding: 100px 20px 0;
+  }
 
-    .profile-section h2 {
-        font-size: 36px;
-        margin-bottom: 30px;
-    }
+  .profile-section h2 {
+    font-size: 36px;
+    margin-bottom: 30px;
+  }
 
-    .profile-wrapper {
-        padding: 20px;
-    }
+  .profile-wrapper {
+    padding: 20px;
+  }
 
-    .info-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 
-    .info-item .label {
-        min-width: auto;
-    }
+  .info-item .label {
+    min-width: auto;
+  }
 
-    .bookings-list {
-        grid-template-columns: 1fr;
-    }
-    .bookings-section {
-        padding: 10px;
-    }
+  .bookings-list {
+    grid-template-columns: 1fr;
+  }
+  .bookings-section {
+    padding: 10px;
+  }
 }
 
 @media (max-width: 480px) {
-    .profile-section {
-        padding: 80px 15px 0;
-    }
+  .profile-section {
+    padding: 80px 15px 0;
+  }
 
-    .profile-section h2 {
-        font-size: 32px;
-    }
+  .profile-section h2 {
+    font-size: 32px;
+  }
 
-    .booking-card {
-        padding: 15px;
-    }
+  .booking-card {
+    padding: 15px;
+  }
 
-    .booking-detail-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
+  .booking-detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
 
-    .booking-detail-item .label {
-        min-width: auto;
-    }
+  .booking-detail-item .label {
+    min-width: auto;
+  }
 
-    .bookings-section {
-        padding: 0px;
-    }
+  .bookings-section {
+    padding: 0px;
+  }
 
-    .booking-actions {
-        text-align: center;
-    }
-
-} 
+  .booking-actions {
+    text-align: center;
+  }
+}
 
 .cancel-booking-btn,
 .leave-review-btn {
-    padding: 16px 32px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-    font-family: "Nunito";
-    font-size: 16px;
-    transition: transform 0.3s;
+  padding: 10px 25px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+  font-family: "Nunito";
+  font-size: 16px;
+  transition: transform 0.3s;
+  height: 45px;
 }
 
 .cancel-booking-btn {
-    background-color: #e74c3c;
-    color: white;
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .cancel-booking-btn:hover {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .leave-review-btn {
-    background-color: #4CAF50;
-    color: white;
+  background-color: #4caf50;
+  color: white;
 }
 
 .leave-review-btn:hover {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 /* Модальное окно для отзыва */
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.4);
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .modal-content {
-    background-color: #fefefe;
-    max-width: 600px;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 50%;
-    border-radius: 8px;
+  background-color: #fefefe;
+  max-width: 600px;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%;
+  border-radius: 8px;
 }
 
 .close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .close:hover {
-    color: black;
+  color: black;
 }
 
 .form-group {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .form-group select,
 .form-group textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .submit-review-btn {
-    background-color: #4CAF50;
-    color: white;
-    font-family: "Nunito";
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    width: 100%;
+  background-color: #4caf50;
+  color: white;
+  font-family: "Nunito";
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
 }
 
 .submit-review-btn:hover {
-    background-color: #45a049;
-} 
+  background-color: #45a049;
+}

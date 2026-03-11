@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Демонстрация</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.2/lottie.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #fff;
+      }
+      h2 {
+        margin-top: 40px;
+      }
+      #preloader,
+      #logo {
+        width: 400px;
+        height: 400px;
+        margin-top: -100px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Рекламный ролик</h2>
+    <video width="960" height="540" controls>
+      <source src="./video.mp4" type="video/mp4" />
+      Ваш браузер не поддерживает воспроизведение видео.
+    </video>
+
+    <h2>Прелоадер</h2>
+    <div id="preloader"></div>
+
+    <h2>Логотип</h2>
+    <!-- <div id="logo"></div> -->
+    <img src="./logo.gif" width="500" />
+
+    <h2>404</h2>
+    <img src="./page404_full.gif" width="900" />
+
+    <script src="preloader.js"></script>
+    <script>
+      var animation = lottie.loadAnimation({
+        container: document.getElementById("preloader"),
+        renderer: "svg",
+        loop: true,
+        autoplay: true,
+        animationData: preloaderData,
+      });
+    </script>
+
+    <!-- <script src="logo.js"></script>
+    <script>
+      var animation = lottie.loadAnimation({
+        container: document.getElementById("logo"),
+        renderer: "svg",
+        loop: true,
+        autoplay: true,
+        animationData: logoData,
+      });
+    </script> -->
+  </body>
+</html>

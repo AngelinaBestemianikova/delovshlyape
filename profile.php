@@ -8,6 +8,12 @@ if (!isset($_SESSION['client_id'])) {
     exit;
 }
 
+// Если это администратор — отправляем в админку
+if (isset($_SESSION['is_admin']) && (int) $_SESSION['is_admin'] === 1) {
+    header('Location: admin.php');
+    exit;
+}
+
 // Get user information from database
 $client_id = $_SESSION['client_id'];
 $query = "SELECT first_name, last_name, email, phone FROM users WHERE id = '$client_id'";
@@ -46,11 +52,11 @@ while ($booking = mysqli_fetch_assoc($bookings_result)) {
     $today = new DateTime();
     $is_past_event = $event_date < $today;
     $has_review = $booking['has_review'] > 0;
-    
+
     $booking['event_date'] = $event_date->format('d.m.Y');
     $booking['is_past_event'] = $is_past_event;
     $booking['has_review'] = $has_review;
-    
+
     $bookings[] = $booking;
 }
 
@@ -130,7 +136,8 @@ unset($_SESSION['booking_success']);
                                 <div class="booking-details">
                                     <div class="booking-detail-item">
                                         <span class="label">Именинник:</span>
-                                        <span class="value"><?php echo htmlspecialchars($booking['child_name']); ?> (<?php echo htmlspecialchars($booking['child_age']); ?> лет)</span>
+                                        <span class="value"><?php echo htmlspecialchars($booking['child_name']); ?>
+                                            (<?php echo htmlspecialchars($booking['child_age']); ?> лет)</span>
                                     </div>
                                     <div class="booking-detail-item">
                                         <span class="label">Место проведения:</span>
@@ -149,9 +156,13 @@ unset($_SESSION['booking_success']);
                                 </div>
                                 <div class="booking-actions">
                                     <?php if (!$booking['is_past_event']): ?>
-                                        <button class="cancel-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Отменить бронь</button>
+                                        <button class="cancel-booking-btn"
+                                            data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Отменить
+                                            бронь</button>
                                     <?php elseif (!$booking['has_review']): ?>
-                                        <button class="leave-review-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Оставить отзыв</button>
+                                        <button class="leave-review-btn"
+                                            data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Оставить
+                                            отзыв</button>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -166,9 +177,9 @@ unset($_SESSION['booking_success']);
 
     <script>
         <?php if ($success_message): ?>
-        window.onload = function() {
-            alert('<?php echo addslashes($success_message); ?>');
-        };
+            window.onload = function () {
+                alert('<?php echo addslashes($success_message); ?>');
+            };
         <?php endif; ?>
     </script>
 
@@ -189,86 +200,86 @@ unset($_SESSION['booking_success']);
     </div>
 
     <script>
-    // Обработка отмены бронирования
-    document.querySelectorAll('.cancel-booking-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const bookingId = this.dataset.bookingId;
-            fetch('cancel_booking.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'booking_id=' + bookingId
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.message || 'Произошла ошибка при отмене бронирования');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при отмене бронирования');
+        // Обработка отмены бронирования
+        document.querySelectorAll('.cancel-booking-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const bookingId = this.dataset.bookingId;
+                fetch('cancel_booking.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'booking_id=' + bookingId
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Произошла ошибка при отмене бронирования');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Произошла ошибка при отмене бронирования');
+                    });
             });
         });
-    });
 
-    // Обработка отзыва
-    const modal = document.getElementById('reviewModal');
-    const closeBtn = document.querySelector('.close');
-    const reviewForm = document.getElementById('reviewForm');
+        // Обработка отзыва
+        const modal = document.getElementById('reviewModal');
+        const closeBtn = document.querySelector('.close');
+        const reviewForm = document.getElementById('reviewForm');
 
-    document.querySelectorAll('.leave-review-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            document.getElementById('bookingId').value = this.dataset.bookingId;
-            modal.style.display = 'block';
+        document.querySelectorAll('.leave-review-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                document.getElementById('bookingId').value = this.dataset.bookingId;
+                modal.style.display = 'block';
+            });
         });
-    });
 
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        if (event.target == modal) {
+        closeBtn.onclick = function () {
             modal.style.display = 'none';
         }
-    }
 
-    reviewForm.onsubmit = function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        
-        fetch('submit_review.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Отзыв успешно отправлен!');
-                // Находим кнопку "Оставить отзыв" для текущего бронирования
-                const bookingId = formData.get('booking_id');
-                const reviewButton = document.querySelector(`.leave-review-btn[data-booking-id="${bookingId}"]`);
-                if (reviewButton) {
-                    reviewButton.textContent = 'Отзыв оставлен';
-                    reviewButton.style.backgroundColor = '#ccc';
-                    reviewButton.style.cursor = 'default';
-                    reviewButton.disabled = true;
-                }
-                // Закрываем модальное окно
+        window.onclick = function (event) {
+            if (event.target == modal) {
                 modal.style.display = 'none';
-            } else {
-                alert(data.message || 'Произошла ошибка при отправке отзыва');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Произошла ошибка при отправке отзыва');
-        });
-    }
+        }
+
+        reviewForm.onsubmit = function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('submit_review.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Отзыв успешно отправлен!');
+                        // Находим кнопку "Оставить отзыв" для текущего бронирования
+                        const bookingId = formData.get('booking_id');
+                        const reviewButton = document.querySelector(`.leave-review-btn[data-booking-id="${bookingId}"]`);
+                        if (reviewButton) {
+                            reviewButton.textContent = 'Отзыв оставлен';
+                            reviewButton.style.backgroundColor = '#ccc';
+                            reviewButton.style.cursor = 'default';
+                            reviewButton.disabled = true;
+                        }
+                        // Закрываем модальное окно
+                        modal.style.display = 'none';
+                    } else {
+                        alert(data.message || 'Произошла ошибка при отправке отзыва');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Произошла ошибка при отправке отзыва');
+                });
+        }
     </script>
 </body>
 

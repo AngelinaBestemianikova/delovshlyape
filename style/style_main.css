@@ -60,6 +60,25 @@
   height: auto;
 }
 
+.video-container {
+  width: 1240px;
+  height: auto;
+  margin: 0 auto;
+  margin-top: 130px;
+  border-radius: 50px;
+  max-width: 1240px;
+  max-width: 100%;
+}
+
+.video-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 5px solid var(--primary-color);
+  border-radius: 50px;
+  overflow: hidden;
+}
+
 /* Programs Section */
 .programs {
   margin-top: 130px;
@@ -244,7 +263,8 @@
   background: white;
   min-height: 80px;
   border-radius: 20px;
-  padding: clamp(20px, 2vw, 24px) clamp(20px, 4vw, 48px) clamp(16px, 2vw, 24px) clamp(24px, 5vw, 77px);
+  padding: clamp(20px, 2vw, 24px) clamp(20px, 4vw, 48px) clamp(16px, 2vw, 24px)
+    clamp(24px, 5vw, 77px);
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
   border: 2px solid transparent;

@@ -3,10 +3,23 @@ session_start();
 include __DIR__ . '/includes/db.php';
 
 // Get redirect URL if set
-$redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'profile.php';
+// $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'profile.php';
+
+// if (isset($_SESSION['name'])) {
+//     header('Location: ' . $redirect);
+//     exit;
+// }
+
+$redirect = 'profile.php';
 
 if (isset($_SESSION['name'])) {
-    header('Location: ' . $redirect);
+
+    if (!empty($_SESSION['is_admin'])) {
+        header('Location: /admin.php');
+    } else {
+        header('Location: /profile.php');
+    }
+
     exit;
 }
 
@@ -65,16 +78,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
     // Only perform login on form submission
     if ($is_submit && $validate_field === 'all' && $response["passed"]) {
-        $query = "SELECT id, first_name, last_name FROM users WHERE email=?";
+        $query = "SELECT id, first_name, last_name, is_admin FROM users WHERE email=?";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, "s", $email);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
+
         if ($result && $row = mysqli_fetch_assoc($result)) {
+
             $_SESSION["name"] = $row['first_name'];
             $_SESSION["lastname"] = $row['last_name'];
             $_SESSION["client_id"] = $row['id'];
-            $response["redirect"] = $redirect;
+            $_SESSION["is_admin"] = (int) $row['is_admin']; // сохраняем в сессию
+
+            // Проверяем администратора
+            if ((int) $row['is_admin'] === 1) {
+                $response["redirect"] = 'admin.php';
+            } else {
+                $response["redirect"] = $redirect;
+            }
+
         } else {
             $response["errors"]["database"] = "Ошибка при входе в систему.";
             $response["passed"] = false;
@@ -97,7 +120,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     <link rel="stylesheet" href="style/auth.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+        rel="stylesheet">
     <title>Авторизация</title>
 </head>
 
