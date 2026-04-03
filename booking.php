@@ -165,7 +165,7 @@ $programs_result = mysqli_query($link, $programs_query);
                     <div class="form-row form-row-special">
                         <div class="field-group">
                             <input type="text" name="location"
-                                placeholder="Где планируете отмечать? (дома / в кафе / на природе)" required>
+                                placeholder="Где планируете отмечать? (укажите точный адрес)" required>
                             <?php if (isset($_SESSION['booking_errors']['location'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['location']); ?></span>

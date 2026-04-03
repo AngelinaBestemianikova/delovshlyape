@@ -163,7 +163,9 @@ $program_types = [
             </div>
 
             <div class="filter-footer">
-                <button type="button" class="apply-filters-btn primary-button">Применить фильтры</button>
+                <button type="button" class="apply-filters-btn primary-button">Применить</button>
+                <button type="button" class="apply-filters-btn reset-filters-btn primary-button"
+                    style="background: #f0f0f0; color: #000000; margin-top: 10px;">Сбросить</button>
             </div>
         </div>
 
@@ -247,7 +249,7 @@ $program_types = [
                         $programs_query .= " ORDER BY name DESC";
                         break;
                     default:
-                        $programs_query .= " ORDER BY id ASC";
+                        $programs_query .= " ORDER BY id DESC";
                 }
 
                 $programs_result = mysqli_query($link, $programs_query);
@@ -384,11 +386,33 @@ $program_types = [
             window.location.href = url.toString();
         }
 
+        function resetFilters() {
+            // Создаем новый URL на базе текущего пути
+            const url = new URL(window.location.origin + window.location.pathname);
+
+            // 1. Сохраняем поиск (берём из инпута)
+            const currentSearch = document.querySelector('input[name="search"]').value;
+            if (currentSearch && currentSearch.trim() !== "") {
+                url.searchParams.set('search', currentSearch.trim());
+            }
+
+            // 2. Сохраняем сортировку (берём из селекта)
+            const currentSort = document.querySelector('.sort-select').value;
+            if (currentSort && currentSort !== 'default') {
+                url.searchParams.set('sort', currentSort);
+            }
+
+            // Параметры фильтров (age, price, children, duration) НЕ добавляем.
+            // Перенаправляем пользователя
+            window.location.href = url.toString();
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const filterToggle = document.querySelector('.filter-toggle');
             const filterPanel = document.querySelector('.filter-panel');
             const closeFilter = document.querySelector('.close-filter');
             const applyFiltersBtn = document.querySelector('.apply-filters-btn');
+            const resetFiltersBtn = document.querySelector('.reset-filters-btn');
 
             filterToggle.addEventListener('click', function () {
                 filterPanel.classList.add('active');
@@ -399,6 +423,9 @@ $program_types = [
             });
 
             applyFiltersBtn.addEventListener('click', applyFilters);
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', resetFilters);
+            }
 
             // Set initial filter values from URL parameters
             const urlParams = new URLSearchParams(window.location.search);

@@ -15,8 +15,8 @@ if (isset($_GET['logout'])) {
 }
 
 // Получаем данные из БД
-$programs_result = mysqli_query($link, "SELECT p.*, t.name AS type_name FROM programs p LEFT JOIN program_types t ON p.type_id = t.id");
-$program_types_result = mysqli_query($link, "SELECT * FROM program_types");
+$programs_result = mysqli_query($link, "SELECT p.*, t.name AS type_name FROM programs p LEFT JOIN program_types t ON p.type_id = t.id ORDER BY p.id DESC");
+$program_types_result = mysqli_query($link, "SELECT * FROM program_types ORDER BY id DESC");
 
 $programs = mysqli_fetch_all($programs_result, MYSQLI_ASSOC);
 $program_types = mysqli_fetch_all($program_types_result, MYSQLI_ASSOC);
