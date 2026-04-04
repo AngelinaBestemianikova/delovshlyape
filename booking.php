@@ -40,6 +40,8 @@ $programs_result = mysqli_query($link, $programs_query);
     <link rel="stylesheet" href="style/booking.css">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=158ba693-867d-49c4-8363-db3240a19663"
+        type="text/javascript"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
         rel="stylesheet" />
@@ -65,7 +67,7 @@ $programs_result = mysqli_query($link, $programs_query);
                     <div class="step-content">
                         <h2>Шаг 2. Заполните форму</h2>
                         <p>Укажите контактные данные (ваше имя, фамилию, почтовый адрес, номер телефона) и данные о
-                            мероприятии (дату мероприятия, место проведения, количество гостей и т.д.)</p>
+                            мероприятии (дату мероприятия, адрес, количество гостей и т.д.)</p>
                     </div>
 
                     <div class="step-content">
@@ -96,6 +98,12 @@ $programs_result = mysqli_query($link, $programs_query);
 
             <div class="booking-form-section">
                 <h1>Заявка на бронирование</h1>
+                <?php if (isset($_SESSION['booking_errors']['database'])): ?>
+                    <div style="color: red; background: #fee; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                        <strong>Ошибка сохранения:</strong>
+                        <?php echo $_SESSION['booking_errors']['database']; ?>
+                    </div>
+                <?php endif; ?>
                 <form class="booking-form" action="process_booking.php" method="POST">
                     <div class="form-row">
                         <input type="text" name="name" placeholder="Имя*"
@@ -164,12 +172,10 @@ $programs_result = mysqli_query($link, $programs_query);
 
                     <div class="form-row form-row-special">
                         <div class="field-group">
-                            <input type="text" name="location"
-                                placeholder="Где планируете отмечать? (укажите точный адрес)" required>
-                            <?php if (isset($_SESSION['booking_errors']['location'])): ?>
-                                <span
-                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['location']); ?></span>
-                            <?php endif; ?>
+                            <input type="text" name="location" id="suggest"
+                                placeholder="Введите адрес или укажите его на карте" required value="">
+                            <div id="map" style="width: 100%; height: 400px; margin-top: 10px; border-radius: 12px;">
+                            </div>
                         </div>
                     </div>
 
@@ -244,6 +250,96 @@ $programs_result = mysqli_query($link, $programs_query);
                 updateCalendar(programSelect.value);
             }
         });
+    </script>
+    <script type="text/javascript">
+        ymaps.ready(init);
+
+        function init() {
+            // Координаты зоны (Минск + ~20км от МКАД)
+            var allowedBounds = [
+                [53.78, 27.35], // Юго-запад (район Щомыслицы / Курасовщины)
+                [54.02, 27.75]  // Северо-восток (район Валерьяново / Колодищ)
+            ];
+            var myMap = new ymaps.Map("map", {
+                center: [53.90, 27.56], // Центр Минска
+                zoom: 10,
+                controls: ['zoomControl']
+            }, {
+                // Ограничиваем область перемещения карты
+                restrictMapArea: allowedBounds
+            });
+
+            var myPlacemark;
+
+            // Настройка поисковых подсказок в поле
+            var suggestView = new ymaps.SuggestView('suggest', {
+                boundedBy: allowedBounds,
+                strictBounds: true // Искать адреса ТОЛЬКО в этой области
+            });
+
+            // Событие при выборе адреса из выпадающего списка
+            suggestView.events.add('select', function (e) {
+                var address = e.get('item').value;
+                geocode(address);
+            });
+
+            // Событие клика по карте
+            myMap.events.add('click', function (e) {
+                var coords = e.get('coords');
+
+                // Проверяем, входит ли точка в разрешенную зону
+                if (ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
+                    updateAddress(coords);
+                } else {
+                    alert("Извините, мы работаем только по Минску и в радиусе 20 км от МКАД.");
+                }
+            });
+
+            // Функция обновления адреса и метки
+            function updateAddress(coords) {
+                if (myPlacemark) {
+                    myPlacemark.geometry.setCoordinates(coords);
+                } else {
+                    myPlacemark = new ymaps.Placemark(coords, {}, {
+                        preset: 'islands#violetDotIconWithCaption'
+                    });
+                    myMap.geoObjects.add(myPlacemark);
+                }
+
+                // Явно вызываем геокодер через встроенный метод
+                ymaps.geocode(coords, {
+                    results: 1
+                }).then(function (res) {
+                    var firstGeoObject = res.geoObjects.get(0);
+
+                    if (firstGeoObject) {
+                        var address = firstGeoObject.getAddressLine();
+                        var inputField = document.getElementById('suggest');
+
+                        if (inputField) {
+                            inputField.value = address;
+                            // Принудительно уведомляем форму, что данные изменились
+                            inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                            inputField.dispatchEvent(new Event('change', { bubbles: true }));
+                            console.log("Адрес успешно получен: " + address);
+                        }
+                    }
+                }).catch(function (err) {
+                    // Если снова вылетит 400, мы увидим причину здесь
+                    console.error("Ошибка при запросе к Яндексу:", err);
+                });
+            }
+            // Поиск по текстовому адресу (для синхронизации карты с вводом)
+            function geocode(address) {
+                ymaps.geocode(address, { results: 1 }).then(function (res) {
+                    var obj = res.geoObjects.get(0),
+                        coords = obj.geometry.getCoordinates();
+
+                    myMap.setCenter(coords, 15);
+                    updateAddress(coords);
+                });
+            }
+        }
     </script>
 </body>
 

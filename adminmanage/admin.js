@@ -142,6 +142,32 @@ async function deleteType(id) {
   }
 }
 
+function updateBookingStatus(id, status) {
+  if (!confirm("Изменить статус бронирования?")) return;
+
+  // Если файл лежит в папке adminmanage, добавьте путь!
+  fetch("adminmanage/admin_update_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `id=${id}&status=${status}`,
+  })
+    .then((res) => {
+      // Проверяем, что сервер вообще прислал JSON
+      if (!res.ok) throw new Error("Сервер ответил ошибкой " + res.status);
+      return res.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert("Ошибка БД: " + (data.message || "Неизвестно"));
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Критическая ошибка: " + err.message + ". Проверьте консоль (F12)");
+    });
+}
 // --- ВКЛАДКИ ---
 document.querySelectorAll(".tab-button").forEach((btn) => {
   btn.addEventListener("click", () => {

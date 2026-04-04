@@ -25,21 +25,22 @@ if (isset($_POST['get_unavailable_dates'])) {
 
             // Получаем список дат, где недостаточно свободных аниматоров
             $query = "
-                SELECT b.event_date, 
-                       COUNT(DISTINCT ba.team_member_id) as booked_count,
-                       COUNT(DISTINCT CASE WHEN ap.program_id = $program_id THEN ba.team_member_id END) as program_booked_count
-                FROM bookings b
-                LEFT JOIN booked_animators ba ON b.id = ba.booking_id
-                LEFT JOIN animator_programs ap ON ba.team_member_id = ap.team_member_id
-                GROUP BY b.event_date
-                HAVING (
-                    -- Проверяем общее количество свободных аниматоров
-                    (SELECT COUNT(DISTINCT id) FROM team_members) - booked_count < $required_animators
-                    OR
-                    -- Проверяем количество свободных аниматоров, которые могут вести эту программу
-                    (SELECT COUNT(DISTINCT team_member_id) FROM animator_programs WHERE program_id = $program_id) - program_booked_count < $required_animators
-                )
-            ";
+    SELECT b.event_date, 
+           COUNT(DISTINCT ba.team_member_id) as booked_count,
+           COUNT(DISTINCT CASE WHEN ap.program_id = $program_id THEN ba.team_member_id END) as program_booked_count
+    FROM bookings b
+    LEFT JOIN booked_animators ba ON b.id = ba.booking_id
+    LEFT JOIN animator_programs ap ON ba.team_member_id = ap.team_member_id
+    WHERE b.status != 'canceled'  -- ВАЖНО: не считаем отмененные брони!
+    GROUP BY b.event_date
+    HAVING (
+        -- Проверяем общее количество свободных аниматоров
+        (SELECT COUNT(DISTINCT id) FROM team_members) - booked_count < $required_animators
+        OR
+        -- Проверяем количество свободных аниматоров, которые могут вести эту программу
+        (SELECT COUNT(DISTINCT team_member_id) FROM animator_programs WHERE program_id = $program_id) - program_booked_count < $required_animators
+    )
+";
             $result = mysqli_query($link, $query);
 
             while ($row = mysqli_fetch_assoc($result)) {

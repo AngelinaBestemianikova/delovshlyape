@@ -2,24 +2,18 @@
 session_start();
 include __DIR__ . '/includes/db.php';
 
-// Get redirect URL if set
-// $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'profile.php';
+$redirect_target = isset($_GET['redirect']) ? $_GET['redirect'] : 'profile.php';
 
-// if (isset($_SESSION['name'])) {
-//     header('Location: ' . $redirect);
-//     exit;
-// }
-
-$redirect = 'profile.php';
-
-if (isset($_SESSION['name'])) {
-
-    if (!empty($_SESSION['is_admin'])) {
+if (isset($_SESSION['client_id'])) {
+    // Если пользователь уже залогинен, проверяем роли
+    if (!empty($_SESSION['is_admin']) && (int) $_SESSION['is_admin'] === 1) {
         header('Location: /admin.php');
+    } else if (!empty($_SESSION['is_animator']) && (int) $_SESSION['is_animator'] === 1) {
+        header('Location: /animator.php');
     } else {
-        header('Location: /profile.php');
+        // Перенаправляем на целевую страницу
+        header('Location: ' . $redirect_target);
     }
-
     exit;
 }
 
@@ -32,9 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     }
 
     $response = ["passed" => true, "errors" => []];
-
     $email = clearString($_POST["email"]);
     $password = clearString($_POST["first-password"]);
+
+    // Снова проверяем redirect из POST (мы передадим его через скрытое поле ниже)
+    $final_redirect = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : 'profile.php';
 
     // Validate only the specified field if provided
     $validate_field = $_POST['validate_field'] ?? 'all';
@@ -76,28 +72,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         }
     }
 
-    // Only perform login on form submission
-    if ($is_submit && $validate_field === 'all' && $response["passed"]) {
-        $query = "SELECT id, first_name, last_name, is_admin FROM users WHERE email=?";
+    // Логика входа
+    if (isset($_POST['is_submit']) && $_POST['is_submit'] === 'true' && $response["passed"]) {
+        $query = "SELECT id, first_name, last_name, is_admin, is_animator FROM users WHERE email=?";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, "s", $email);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
 
         if ($result && $row = mysqli_fetch_assoc($result)) {
-
             $_SESSION["name"] = $row['first_name'];
             $_SESSION["lastname"] = $row['last_name'];
             $_SESSION["client_id"] = $row['id'];
-            $_SESSION["is_admin"] = (int) $row['is_admin']; // сохраняем в сессию
+            $_SESSION["is_admin"] = (int) $row['is_admin'];
+            $_SESSION["is_animator"] = (int) $row['is_animator'];
 
-            // Проверяем администратора
+            // 2. ОПРЕДЕЛЯЕМ, КУДА ОТПРАВИТЬ ПОСЛЕ AJAX
             if ((int) $row['is_admin'] === 1) {
                 $response["redirect"] = 'admin.php';
+            } else if ((int) $row['is_animator'] === 1) {
+                $response["redirect"] = 'animator.php';
             } else {
-                $response["redirect"] = $redirect;
+                // Если есть адрес возврата, используем его
+                $response["redirect"] = $final_redirect;
             }
-
         } else {
             $response["errors"]["database"] = "Ошибка при входе в систему.";
             $response["passed"] = false;
@@ -138,6 +136,7 @@ include __DIR__ . './elements/login.php';
             <h2>Авторизация</h2>
             <div class="form-wrapper">
                 <form id="login-form" class="form">
+                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($redirect_target); ?>">
                     <div class="box-input">
                         <input class="input" name="email" type="text" required>
                         <label>Введите email</label>
@@ -149,7 +148,8 @@ include __DIR__ . './elements/login.php';
                         <span id="password-error" class="error"></span>
                     </div>
                     <input type="submit" class="button" value="Войти">
-                    <a href="auth.php" class="enterOnAuth">Нет аккаунта? Зарегистрироваться</a>
+                    <a href="auth.php?redirect=<?php echo urlencode($redirect_target); ?>" class="enterOnAuth">Нет
+                        аккаунта? Зарегистрироваться</a>
                 </form>
             </div>
         </div>

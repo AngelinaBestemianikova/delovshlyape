@@ -45,12 +45,101 @@ $program_types = mysqli_fetch_all($program_types_result, MYSQLI_ASSOC);
 
             <!-- Вкладки -->
             <div class="tabs">
-                <button class="tab-button active" data-tab="programs-tab">Программы</button>
+                <button class="tab-button active" data-tab="bookings-tab">Новые заявки</button>
+                <button class="tab-button" data-tab="programs-tab">Программы</button>
                 <button class="tab-button" data-tab="types-tab">Типы программ</button>
             </div>
 
+            <div class="tab-content" id="bookings-tab">
+                <h3>Управление бронированиями</h3>
+                <table class="admin-table">
+                    <tr>
+                        <th>Поступила / Дата события</th>
+                        <th>Клиент/Программа</th>
+                        <th>Аниматор и Статус занятости</th>
+                        <th>Детали</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                    <?php
+                    $query = "
+            SELECT 
+                b.*, 
+                p.name as p_name, 
+                u.first_name, 
+                u.phone,
+                GROUP_CONCAT(tm.name SEPARATOR ', ') as animator_names,
+                -- Проверка конфликтов: ищем другие активные брони тех же аниматоров на ту же дату
+                (SELECT COUNT(*) 
+                 FROM booked_animators ba2 
+                 JOIN bookings b2 ON ba2.booking_id = b2.id 
+                 WHERE ba2.team_member_id IN (SELECT team_member_id FROM booked_animators WHERE booking_id = b.id)
+                 AND b2.event_date = b.event_date 
+                 AND b2.id != b.id 
+                 AND b2.status = 'confirmed') as conflicts
+            FROM bookings b 
+            JOIN programs p ON b.program_id = p.id 
+            JOIN users u ON b.user_id = u.id 
+            LEFT JOIN booked_animators ba ON b.id = ba.booking_id
+            LEFT JOIN team_members tm ON ba.team_member_id = tm.id
+            GROUP BY b.id
+            ORDER BY b.id DESC";
+
+                    $all_bookings = mysqli_query($link, $query);
+
+                    while ($row = mysqli_fetch_assoc($all_bookings)):
+                        $status_class = 'status-' . $row['status'];
+                        $status_text = [
+                            'pending' => 'На уточнении',
+                            'confirmed' => 'Подтверждена',
+                            'canceled' => 'Отменена'
+                        ][$row['status']];
+                        ?>
+                        <tr>
+                            <td>
+                                Заявка: <?= date('d.m.Y H:i', strtotime($row['created_at'])) ?>
+                                <b>Событие: <?= date('d.m.Y', strtotime($row['event_date'])) ?></b>
+                            </td>
+                            <td>
+                                <?= htmlspecialchars($row['first_name']) ?><br>
+                                <?= htmlspecialchars($row['phone']) ?><br><br>
+                                <?= htmlspecialchars($row['p_name']) ?>
+                            </td>
+                            <td>
+                                <?php if ($row['animator_names']): ?>
+                                    <?= htmlspecialchars($row['animator_names']) ?><br>
+                                    <?php if ($row['conflicts'] > 0): ?>
+                                        <span style="color: #ff4d4d;">Занят на эту дату!</span>
+                                    <?php else: ?>
+                                        <span style="color: #2ecc71;">Свободен</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span style="color: #999;">Не назначен</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                Именинник: <?= htmlspecialchars($row['child_name']) ?> (<?= $row['child_age'] ?> л.)<br>
+                                Адрес: <?= htmlspecialchars($row['event_location']) ?>
+                            </td>
+                            <td><span class="status-badge <?= $status_class ?>"><?= $status_text ?></span></td>
+                            <td>
+                                <?php if ($row['status'] == 'pending'): ?>
+                                    <button class="btn-approve"
+                                        onclick="updateBookingStatus(<?= $row['id'] ?>, 'confirmed')">Одобрить</button>
+                                    <button class="btn-reject"
+                                        onclick="updateBookingStatus(<?= $row['id'] ?>, 'canceled')">Отклонить</button>
+                                <?php else: ?>
+                                    <button class="btn-edit" onclick="updateBookingStatus(<?= $row['id'] ?>, 'pending')">
+                                        Изменить</button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </table>
+            </div>
+
             <!-- Программы -->
-            <div class="tab-content" id="programs-tab">
+            <div class="tab-content" id="programs-tab" style="display:none;">
                 <h3>Программы</h3>
                 <button class="add-button" onclick="openProgramModal()">Добавить программу</button>
                 <table class="admin-table">

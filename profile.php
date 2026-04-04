@@ -13,6 +13,10 @@ if (isset($_SESSION['is_admin']) && (int) $_SESSION['is_admin'] === 1) {
     header('Location: admin.php');
     exit;
 }
+if (isset($_SESSION['is_animator']) && (int) $_SESSION['is_animator'] === 1) {
+    header('Location: animator.php');
+    exit;
+}
 
 // Get user information from database
 $client_id = $_SESSION['client_id'];
@@ -46,18 +50,25 @@ if (!$bookings_result) {
     die("Database query failed: " . mysqli_error($link));
 }
 
-$bookings = [];
+$active_bookings = [];
+$past_bookings = [];
+
 while ($booking = mysqli_fetch_assoc($bookings_result)) {
     $event_date = new DateTime($booking['event_date']);
-    $today = new DateTime();
+    $today = new DateTime('today'); // Берем начало текущего дня для корректного сравнения
+
     $is_past_event = $event_date < $today;
     $has_review = $booking['has_review'] > 0;
 
-    $booking['event_date'] = $event_date->format('d.m.Y');
+    $booking['display_date'] = $event_date->format('d.m.Y');
     $booking['is_past_event'] = $is_past_event;
     $booking['has_review'] = $has_review;
 
-    $bookings[] = $booking;
+    if ($is_past_event) {
+        $past_bookings[] = $booking;
+    } else {
+        $active_bookings[] = $booking;
+    }
 }
 
 // Handle logout
@@ -117,64 +128,50 @@ unset($_SESSION['booking_success']);
                     </div>
                 </div>
                 <div class="profile-actions">
+                    <button class="edit-profile-btn" id="openEditModal">Редактировать профиль</button>
                     <a href="?logout=1" class="logout-button">Выйти</a>
                 </div>
             </div>
 
             <div class="bookings-section">
                 <h2>Мои бронирования</h2>
-                <?php if (empty($bookings)): ?>
-                    <p class="no-bookings">У вас пока нет бронирований</p>
-                <?php else: ?>
-                    <div class="bookings-list">
-                        <?php foreach ($bookings as $booking): ?>
-                            <div class="booking-card">
-                                <div class="booking-header">
-                                    <h4><?php echo htmlspecialchars($booking['program_name']); ?></h4>
-                                    <span class="booking-date"><?php echo htmlspecialchars($booking['event_date']); ?></span>
-                                </div>
-                                <div class="booking-details">
-                                    <div class="booking-detail-item">
-                                        <span class="label">Именинник:</span>
-                                        <span class="value"><?php echo htmlspecialchars($booking['child_name']); ?>
-                                            (<?php echo htmlspecialchars($booking['child_age']); ?> лет)</span>
-                                    </div>
-                                    <div class="booking-detail-item">
-                                        <span class="label">Место проведения:</span>
-                                        <span class="value"><?php echo htmlspecialchars($booking['event_location']); ?></span>
-                                    </div>
-                                    <div class="booking-detail-item">
-                                        <span class="label">Количество гостей:</span>
-                                        <span class="value"><?php echo htmlspecialchars($booking['guest_count']); ?></span>
-                                    </div>
-                                    <?php if (!empty($booking['wishes'])): ?>
-                                        <div class="booking-detail-item">
-                                            <span class="label">Пожелания:</span>
-                                            <span class="value"><?php echo htmlspecialchars($booking['wishes']); ?></span>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="booking-actions">
-                                    <?php if (!$booking['is_past_event']): ?>
-                                        <button class="cancel-booking-btn"
-                                            data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Отменить
-                                            бронь</button>
-                                    <?php elseif (!$booking['has_review']): ?>
-                                        <button class="leave-review-btn"
-                                            data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">Оставить
-                                            отзыв</button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
+
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="active-tab">Предстоящие</button>
+                    <button class="tab-button" data-tab="past-tab">Прошедшие</button>
+                </div>
+
+                <div id="active-tab" class="tab-content">
+                    <?php if (empty($active_bookings)): ?>
+                        <p class="no-bookings">У вас нет предстоящих бронирований</p>
+                    <?php else: ?>
+                        <div class="bookings-list">
+                            <?php foreach ($active_bookings as $booking): ?>
+                                <?php include 'includes/booking_card.php'; // Вынес карту в отдельный файл для чистоты, или вставь код карты сюда ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div id="past-tab" class="tab-content" style="display: none;">
+                    <?php if (empty($past_bookings)): ?>
+                        <p class="no-bookings">История бронирований пуста</p>
+                    <?php else: ?>
+                        <div class="bookings-list">
+                            <?php foreach ($past_bookings as $booking): ?>
+                                <?php
+                                // Используем тот же код карточки, что и выше
+                                include 'includes/booking_card.php';
+                                ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </section>
 
     <?php include 'includes/footer.php'; ?>
-
     <script>
         <?php if ($success_message): ?>
             window.onload = function () {
@@ -190,11 +187,46 @@ unset($_SESSION['booking_success']);
             <h2>Оставить отзыв</h2>
             <form id="reviewForm">
                 <input type="hidden" id="bookingId" name="booking_id">
+                <input type="hidden" id="programId" name="program_id">
                 <div class="form-group">
                     <label for="comment">Комментарий:</label>
                     <textarea id="comment" name="comment" rows="4" required></textarea>
                 </div>
                 <button type="submit" class="submit-review-btn">Отправить отзыв</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit">&times;</span>
+            <h2>Редактировать профиль</h2>
+            <form id="editProfileForm" class="form">
+                <div class="box-input">
+                    <input class="input" name="first_name" type="text"
+                        value="<?php echo htmlspecialchars($user['first_name']); ?>" required>
+                    <label>Имя</label>
+                    <span class="error-msg" id="err_first_name"></span>
+                </div>
+                <div class="box-input">
+                    <input class="input" name="last_name" type="text"
+                        value="<?php echo htmlspecialchars($user['last_name']); ?>" required>
+                    <label>Фамилия</label>
+                    <span class="error-msg" id="err_last_name"></span>
+                </div>
+                <div class="box-input">
+                    <input class="input" name="email" type="text"
+                        value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                    <label>E-mail</label>
+                    <span class="error-msg" id="err_email"></span>
+                </div>
+                <div class="box-input">
+                    <input class="input" name="phone" type="text"
+                        value="<?php echo htmlspecialchars($user['phone']); ?>" required>
+                    <label>Телефон</label>
+                    <span class="error-msg" id="err_phone"></span>
+                </div>
+                <button type="submit" class="submit-edit-btn">Сохранить изменения</button>
             </form>
         </div>
     </div>
@@ -234,6 +266,7 @@ unset($_SESSION['booking_success']);
         document.querySelectorAll('.leave-review-btn').forEach(button => {
             button.addEventListener('click', function () {
                 document.getElementById('bookingId').value = this.dataset.bookingId;
+                document.getElementById('programId').value = this.dataset.programId;
                 modal.style.display = 'block';
             });
         });
@@ -280,6 +313,60 @@ unset($_SESSION['booking_success']);
                     alert('Произошла ошибка при отправке отзыва');
                 });
         }
+    </script>
+
+    <script>
+        document.querySelectorAll(".tab-button").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                // Скрываем все блоки контента
+                document.querySelectorAll(".tab-content").forEach((tab) => {
+                    tab.style.display = "none";
+                });
+
+                // Показываем нужный
+                const targetId = btn.getAttribute("data-tab");
+                document.getElementById(targetId).style.display = "block";
+
+                // Переключаем активный класс у кнопок
+                document.querySelectorAll(".tab-button").forEach((b) => {
+                    b.classList.remove("active");
+                });
+                btn.classList.add("active");
+            });
+        });
+    </script>
+
+    <script> const editModal = document.getElementById('editProfileModal');
+        const openEditBtn = document.getElementById('openEditModal');
+        const closeEditBtn = document.querySelector('.close-edit');
+
+        openEditBtn.onclick = () => editModal.style.display = 'block';
+        closeEditBtn.onclick = () => editModal.style.display = 'none';
+
+        document.getElementById('editProfileForm').onsubmit = function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            // Очистка старых ошибок
+            document.querySelectorAll('.error-msg').forEach(el => el.textContent = '');
+
+            fetch('update_profile.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Данные обновлены!');
+                        location.reload();
+                    } else if (data.errors) {
+                        for (let field in data.errors) {
+                            const errSpan = document.getElementById(`err_${field}`);
+                            if (errSpan) errSpan.textContent = data.errors[field];
+                        }
+                    }
+                });
+        };
     </script>
 </body>
 

@@ -682,3 +682,10 @@ textarea {
     font-size: 14px;
   }
 }
+
+.review-program {
+  color: var(--primary-color); /* Фиолетовый оттенок под вашу палитру */
+  /* background: rgba(106, 27, 154, 0.05); */
+  border-radius: 10px;
+  text-align: center;
+}

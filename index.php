@@ -24,10 +24,11 @@
   $programs_query = "SELECT * FROM program_types ORDER BY id";
   $programs_result = mysqli_query($link, $programs_query);
 
-  // Fetch latest review
-  $review_query = "SELECT r.*, u.first_name as name, u.path_image as avatar 
+  // Fetch latest review with program name
+  $review_query = "SELECT r.*, u.first_name as name, u.path_image as avatar, p.name as program_name
                    FROM reviews r 
                    JOIN users u ON r.user_id = u.id 
+                   LEFT JOIN programs p ON r.program_id = p.id
                    ORDER BY r.created_time DESC 
                    LIMIT 1";
   $review_result = mysqli_query($link, $review_query);
@@ -157,11 +158,18 @@
         <h1>Последний отзыв</h1>
         <?php if ($latest_review): ?>
           <div class="review-content">
-            <p><?php echo htmlspecialchars($latest_review['comment']); ?></p>
+            <?php if (!empty($latest_review['program_name'])): ?>
+              <p class="review-program">
+                <strong><?php echo htmlspecialchars($latest_review['program_name']); ?></strong>
+              </p>
+            <?php endif; ?>
+
+            <p class="review-text"><?php echo htmlspecialchars($latest_review['comment']); ?></p>
+
             <div class="reviewer">
-              <img src="<?php echo htmlspecialchars($latest_review['avatar']); ?>"
+              <img src="<?php echo htmlspecialchars($latest_review['avatar'] ?? 'images/default-avatar.png'); ?>"
                 alt="<?php echo htmlspecialchars($latest_review['name']); ?>" class="reviewer-img">
-              <p><?php echo htmlspecialchars($latest_review['name']); ?></p>
+              <p class="reviewer-name"><?php echo htmlspecialchars($latest_review['name']); ?></p>
             </div>
           </div>
         <?php else: ?>

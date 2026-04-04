@@ -302,7 +302,7 @@
   padding: 20px;
   border: 1px solid #888;
   width: 50%;
-  border-radius: 8px;
+  border-radius: 20px;
 }
 
 .close {
@@ -340,9 +340,9 @@
   background-color: #4caf50;
   color: white;
   font-family: "Nunito";
-  padding: 10px 20px;
+  padding: 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 50px;
   cursor: pointer;
   font-size: 16px;
   width: 100%;
@@ -350,4 +350,222 @@
 
 .submit-review-btn:hover {
   background-color: #45a049;
+}
+
+/* --- Вкладки (Текстовый стиль) --- */
+.tabs {
+  margin: 30px 0;
+  display: flex;
+  gap: 50px;
+  justify-content: center;
+  width: 100%;
+  border-bottom: 1px solid #eee;
+}
+
+.tab-button {
+  background: none !important;
+  border: none !important;
+  padding: 10px 0;
+  font-family: "Nunito", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000 !important;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.3s ease;
+  border-radius: 0 !important;
+  outline: none;
+}
+
+.tab-button.active {
+  color: var(--primary-color) !important;
+}
+
+.tab-button.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Выделение строки статуса */
+.status-badge {
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* Цвета статусов */
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+.status-confirmed {
+  background-color: #d4edda;
+  color: #155724;
+}
+.status-canceled {
+  color: #721c24;
+}
+
+/* Состояние отмененной карточки */
+.booking-card-canceled {
+  background-color: #f9f9f9; /* Серый подтон */
+  border-color: #ddd;
+  filter: grayscale(0.8); /* Делаем цвета более тусклыми */
+  opacity: 0.8;
+}
+
+.booking-card-canceled .label,
+.booking-card-canceled .value {
+  color: #888; /* Текст тоже серый */
+}
+
+.cancel-label {
+  color: #d9534f;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* Блокировка взаимодействий (опционально) */
+.booking-card-canceled .booking-actions button {
+  display: none;
+}
+
+/* --- Кнопка редактирования --- */
+.edit-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Nunito", sans-serif;
+  font-weight: 400;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  line-height: 1;
+  text-decoration: none;
+  padding: 17px 40px;
+  font-size: 16px;
+  background-color: var(--primary-color); /* фиолетовый */
+  color: #ffffff;
+  margin-right: 15px; /* Отступ от кнопки Выйти */
+}
+
+.edit-profile-btn:hover {
+  transform: scale(1.05);
+}
+
+/* --- Модальное окно в стиле сайта --- */
+#editProfileModal .modal-content {
+  background-color: #fff;
+  max-width: 500px;
+  margin: 10% auto;
+  padding: 40px;
+  border: none;
+  border-radius: 20px; /* Как у profile-wrapper */
+  position: relative;
+}
+
+#editProfileModal h2 {
+  margin-bottom: 30px;
+}
+
+/* Стили полей ввода (box-input) как в твоей регистрации */
+.box-input {
+  position: relative;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+.box-input .input {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 16px;
+  font-family: "Nunito", sans-serif;
+  color: #333;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  outline: none;
+  background: transparent;
+  transition: 0.3s;
+}
+
+.box-input label {
+  position: absolute;
+  top: -10px; /* Метка всегда сверху, так как данные уже есть в value */
+  left: 0;
+  font-size: 14px;
+  color: #666;
+  font-family: "Nunito", sans-serif;
+  pointer-events: none;
+}
+
+.box-input .input:focus {
+  border-bottom: 2px solid var(--primary-color);
+}
+
+/* Ошибки валидации */
+.error-msg {
+  color: #e74c3c;
+  font-size: 13px;
+  font-family: "Nunito";
+  margin-top: 5px;
+  display: block;
+  height: 15px;
+}
+
+/* Кнопка сохранения внутри модалки */
+.submit-edit-btn {
+  width: 100%;
+  background-color: #4caf50;
+  color: white;
+  padding: 16px;
+  border-radius: 50px;
+  border: none;
+  font-family: "Nunito";
+  font-weight: 400;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+.submit-edit-btn:hover {
+  transform: scale(1.02);
+  background-color: #45a049;
+}
+
+/* Кнопка закрытия */
+.close-edit {
+  position: absolute;
+  right: 25px;
+  top: 20px;
+  color: #aaa;
+  font-size: 28px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.close-edit:hover {
+  color: #333;
+}
+
+/* Адаптив для модалки */
+@media (max-width: 768px) {
+  #editProfileModal .modal-content {
+    width: 90%;
+    padding: 30px 20px;
+  }
+
+  .edit-profile-btn {
+    padding: 15px 25px;
+    font-size: 14px;
+  }
 }

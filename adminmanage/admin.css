@@ -285,6 +285,54 @@
   color: #fff;
 }
 
+/* Статусы в таблице и карточках */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+} /* Желтый */
+.status-confirmed {
+  background: #d4edda;
+  color: #155724;
+} /* Зеленый */
+.status-canceled {
+  background: #f8d7da;
+  color: #721c24;
+} /* Красный */
+
+/* Кнопки действий */
+.btn-approve {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 5px;
+}
+
+.btn-reject {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-approve:hover {
+  background: #218838;
+}
+.btn-reject:hover {
+  background: #c82333;
+}
+
 /* --- Адаптив --- */
 @media (max-width: 900px) {
   .modal-content form {
