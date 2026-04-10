@@ -1,3 +1,8 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="ru">
 
@@ -26,11 +31,13 @@
 
   // Fetch latest review with program name
   $review_query = "SELECT r.*, u.first_name as name, u.path_image as avatar, p.name as program_name
-                   FROM reviews r 
-                   JOIN users u ON r.user_id = u.id 
-                   LEFT JOIN programs p ON r.program_id = p.id
-                   ORDER BY r.created_time DESC 
-                   LIMIT 1";
+                 FROM reviews r 
+                 JOIN users u ON r.user_id = u.id 
+                 LEFT JOIN programs p ON r.program_id = p.id
+                 WHERE r.status = 'approved' 
+                 ORDER BY r.created_time DESC 
+                 LIMIT 1";
+
   $review_result = mysqli_query($link, $review_query);
   $latest_review = mysqli_fetch_assoc($review_result);
   ?>
@@ -105,13 +112,13 @@
         <div class="features-list">
           <h1>В каждую программу включено</h1>
           <ul>
-            <li>4 часа развлекательной программы</li>
-            <li>Профессиональный аниматор для различных игр</li>
-            <li>Аренда праздничного зала на 3 часа</li>
-            <li>Оформление зала в тематике праздника</li>
-            <li>Фотосьемка мероприятия в течение 1 часа</li>
-            <li>Тематическая фотозона</li>
-            <li>Наш подарок имениннику</li>
+            <li>Развлекательная программа по сценарию</li>
+            <li>Профессиональное актерское исполнение</li>
+            <li>Подготовка и оснащение площадки</li>
+            <li>Полное сопровождение мероприятия</li>
+            <li>Фотосьемка мероприятия</li>
+            <li>Тематические декорации и фотозоны</li>
+            <li>Наш сюрприз имениннику</li>
           </ul>
         </div>
       </div>

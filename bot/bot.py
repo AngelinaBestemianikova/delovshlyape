@@ -121,11 +121,14 @@ async def get_password(update: Update, context: CallbackContext) -> int:
             )
         else:
             response = "*Ваши активные бронирования*:\n\n"
-            for reservation in active_reservations:
+            for r in active_reservations:
+                # r[0]-ID, r[1]-Программа, r[2]-Дата, r[3]-Адрес, r[4]-Гости
                 response += (
-                    f"🔹 *ID*: {reservation[0]}\n"
-                    f"🎉 *Программа*: {reservation[1]}\n"
-                    f"📅 *Дата*: {reservation[2]}\n\n"
+                    f"🔹 *ID*: `{r[0]}`\n"
+                    f"🎉 *Программа*: {r[1]}\n"
+                    f"📅 *Дата*: {r[2]}\n"
+                    f"📍 *Адрес*: {r[3]}\n"
+                    f"👥 *Кол-во гостей*: {r[4]}\n\n"
                 )
             response += "Введите ID бронирования, которое вы хотите *отменить*, или /cancel для выхода."
             

@@ -341,6 +341,29 @@ footer .container {
   max-width: clamp(280px, 100%, 485px);
 }
 
+.error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 8px;
+  font-family: "Nunito";
+  display: none;
+  padding: 4px 8px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+}
+
+.error.show {
+  display: block;
+}
+
+.input.error-input {
+  border: 2px solid #e74c3c;
+}
+
+.input.error-input:focus {
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
 @media (max-width: 1260px) {
   .nav-links {
     gap: 35px;

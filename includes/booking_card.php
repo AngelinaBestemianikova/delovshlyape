@@ -4,7 +4,7 @@ $is_canceled = ($booking['status'] === 'canceled');
 <div class="booking-card <?php echo $is_canceled ? 'booking-card-canceled' : ''; ?>">
     <div class="booking-header">
         <h4><?php echo htmlspecialchars($booking['program_name']); ?></h4>
-        <span class="booking-date"><?php echo htmlspecialchars($booking['event_date']); ?></span>
+        <span class="booking-date"><?php echo $formatted_date; ?></span>
     </div>
 
     <div class="booking-details">

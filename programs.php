@@ -1,4 +1,5 @@
 <?php
+session_start();
 require_once 'includes/db.php';
 
 // Get all filter parameters
@@ -194,8 +195,7 @@ $program_types = [
             </div>
 
             <?php while ($type = mysqli_fetch_assoc($types_result)):
-                $programs_query = "SELECT * FROM programs WHERE type_id = " . $type['id'];
-
+                $programs_query = "SELECT * FROM programs WHERE is_archived = 0 AND type_id = " . $type['id'];
                 // Add search condition
                 if (!empty($search)) {
                     $search_term = mysqli_real_escape_string($link, $search);
@@ -254,10 +254,10 @@ $program_types = [
 
                 $programs_result = mysqli_query($link, $programs_query);
                 $programs_count = mysqli_num_rows($programs_result);
-                $total_programs_found += $programs_count;
 
-                // Only show the category if it has programs or if no filters are active
-                if ($programs_count > 0 || (empty($search) && $age === 'any' && $price === 'any' && $children === 'any' && $duration === 'any')):
+                // 2. ГЛАВНОЕ ИЗМЕНЕНИЕ: Выводим заголовок типа и описание ТОЛЬКО если есть программы
+                if ($programs_count > 0):
+                    $total_programs_found += $programs_count;
                     $has_any_programs = true;
                     ?>
                     <div class="program-type" id="program-type-<?php echo $type['id']; ?>">
@@ -270,12 +270,13 @@ $program_types = [
 
                         <div class="programs-grid">
                             <?php while ($program = mysqli_fetch_assoc($programs_result)): ?>
-                                <div class="program-card">
+                                <div class="program-card" id="program-<?php echo $program['id']; ?>">
                                     <img src="<?php echo htmlspecialchars($program['image_path']); ?>"
                                         alt="<?php echo htmlspecialchars($program['name']); ?>">
                                     <div class="program-info">
                                         <h2><?php echo htmlspecialchars($program['name']); ?></h2>
                                         <p class="program-description"><?php echo htmlspecialchars($program['description']); ?></p>
+
                                         <p class="program-price-included" style="font-weight: bold;">В стоимость включено:</p>
                                         <ul class="program-services">
                                             <?php
@@ -285,18 +286,16 @@ $program_types = [
                                                 <li><?php echo htmlspecialchars(trim($service)); ?></li>
                                             <?php endforeach; ?>
                                         </ul>
+
                                         <div class="program-details">
                                             <div class="detail">
                                                 <img src="images/time.svg" alt="Duration" class="detail-icon">
                                                 <span class="value">
                                                     <?php
                                                     if ($program['duration'] % 60 == 0) {
-                                                        $hours = $program['duration'] / 60;
-                                                        echo $hours . 'ч';
+                                                        echo ($program['duration'] / 60) . 'ч';
                                                     } else {
-                                                        $hours = floor($program['duration'] / 60);
-                                                        $minutes = $program['duration'] % 60;
-                                                        echo $hours . ' ч ' . $minutes . ' мин';
+                                                        echo floor($program['duration'] / 60) . ' ч ' . ($program['duration'] % 60) . ' мин';
                                                     }
                                                     ?>
                                                 </span>
@@ -307,12 +306,29 @@ $program_types = [
                                             </div>
                                             <div class="detail">
                                                 <img src="images/money.svg" alt="Price" class="detail-icon">
-                                                <span
-                                                    class="value"><?php echo number_format($program['price'], 0, ',', ' '); ?>p</span>
+                                                <span class="value"><?php echo number_format($program['price'], 0, ',', ' '); ?>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360.67 446.4"
+                                                        style="height: 13px; width: auto; vertical-align: middle; fill: currentColor; margin-bottom: 2px;">
+                                                        <path
+                                                            d="M475.61,528.84c0-72.5-62.75-131.27-140.16-131.27H227.58V263.37H426v-49.6H178v290h-63.1v49.7H178V660.17h49.54l107.92-.07c77.36,0,140.11-58.77,140.11-131.26Zm-248-25.1V447.1c35.89,0,72.35.07,107.87.07,50,0,90.56,36.57,90.56,81.67s-40.54,81.67-90.56,81.7l-107.87,0V553.44h112.7v-49.7Z"
+                                                            transform="translate(-114.94 -213.77)" />
+                                                    </svg>
+                                                </span>
                                             </div>
                                         </div>
-                                        <button class="primary-button"
-                                            onclick="window.location.href='booking.php?program=<?php echo urlencode($program['name']); ?>'">Забронировать</button>
+
+                                        <div class="program-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+                                            <button class="primary-button"
+                                                onclick="window.location.href='booking.php?program=<?php echo urlencode($program['name']); ?>'">
+                                                Забронировать
+                                            </button>
+
+                                            <button class="primary-button"
+                                                style="background: transparent; border: 2px solid #8A2BE2; color: #8A2BE2;"
+                                                onclick="window.location.href='about.php?program_id=<?php echo $program['id']; ?>#reviews-section'">
+                                                Читать отзывы
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endwhile; ?>

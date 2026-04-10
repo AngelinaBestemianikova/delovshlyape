@@ -149,3 +149,9 @@ textarea {
   margin-top: 2px;
   display: block;
 }
+
+/* Родительский контейнер, чтобы ничего не вылетало */
+.field-group {
+  width: 100%;
+  box-sizing: border-box;
+}

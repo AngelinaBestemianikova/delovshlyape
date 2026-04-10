@@ -557,6 +557,113 @@
   color: #333;
 }
 
+/* Контейнер уведомлений */
+.notif-wrapper {
+  margin-bottom: 20px;
+  border-radius: 100px;
+}
+
+/* Выпадающее окно */
+.notif-dropdown {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #eee;
+  max-width: 350px;
+  overflow: hidden;
+  margin: 0 auto;
+  margin-top: 40px;
+}
+
+.notif-header {
+  background: #fafafa;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.notif-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Скрыли крестик (если он был в HTML) */
+.close-notif {
+  display: none;
+}
+
+/* Карточка внутри слайдера */
+.slider-card {
+  padding: 20px;
+  border-radius: 50px;
+}
+
+.msg-date {
+  font-size: 12px;
+  color: #999;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Информация в столбик */
+.user-contact-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 50px;
+}
+
+.user-name-text {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Телефон черным */
+.user-phone-black {
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* Стили кнопок уведомлений */
+.btn-del,
+.btn-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Nunito", sans-serif;
+  border-radius: 50px;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  flex: 1;
+  padding: 10px 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  color: #ffffff;
+}
+
+.btn-del {
+  background-color: var(--secondary-color);
+}
+
+.btn-next {
+  background-color: var(--primary-color);
+}
+
+.btn-del:hover,
+.btn-next:hover {
+  transform: scale(1.05);
+}
+
+.notif-dropdown {
+  border-radius: 50px;
+}
+
 /* Адаптив для модалки */
 @media (max-width: 768px) {
   #editProfileModal .modal-content {
@@ -568,4 +675,37 @@
     padding: 15px 25px;
     font-size: 14px;
   }
+}
+
+/* Секция бронирований */
+.bookings-section {
+  max-width: 1200px; /* Фиксированная ширина контейнера как в примере */
+  margin: 0 auto;
+  overflow: hidden; /* Всё, что выходит за пределы, обрезается */
+}
+
+/* Обертка самого ряда (слайдер) */
+.bookings-slider-wrapper {
+  display: flex;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+/* Скрытие скроллбара */
+.bookings-slider-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.bookings-slider-wrapper {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Сама карточка в ряду */
+.booking-card-item {
+  flex: 0 0 auto; /* Не дает карточкам сжиматься */
+  width: 350px; /* Фиксированная ширина карточки */
 }

@@ -16,20 +16,35 @@
 
 <body>
     <?php
+    session_start();
     include 'includes/header.php';
     require_once 'includes/db.php';
+
+    // Fetch team members
+    // 1. Получаем параметры из URL (как в programs.php)
+    $selected_program_id = isset($_GET['program_id']) ? (int) $_GET['program_id'] : 0;
 
     // Fetch team members
     $team_query = "SELECT * FROM team_members ORDER BY id";
     $team_result = mysqli_query($link, $team_query);
 
-    // Fetch all reviews with program names
-    $reviews_query = "SELECT r.*, u.first_name as name, u.path_image as avatar, p.name as program_name
+    // 2. Получаем список программ для выпадающего списка
+    $all_programs_query = "SELECT id, name FROM programs ORDER BY name";
+    $all_programs_result = mysqli_query($link, $all_programs_query);
+
+    // 3. Формируем запрос отзывов с учетом фильтра
+    $where_clause = " WHERE r.status = 'approved' ";
+
+    if ($selected_program_id > 0) {
+        // Если выбрана программа, добавляем её через AND
+        $where_clause .= " AND r.program_id = $selected_program_id ";
+    }
+    $reviews_query = "SELECT r.*, u.first_name as name, u.path_image as avatar, p.name as program_name, p.id as p_id
                   FROM reviews r 
                   JOIN users u ON r.user_id = u.id 
                   LEFT JOIN programs p ON r.program_id = p.id 
-                  ORDER BY r.created_time DESC
-                  LIMIT 10";
+                  $where_clause
+                  ORDER BY r.created_time DESC";
     $reviews_result = mysqli_query($link, $reviews_query);
     ?>
 
@@ -102,35 +117,32 @@
         </div>
     </section>
 
-    <section class="reviews">
+    <section class="reviews" id="reviews-section">
         <div class="container">
             <h1>Отзывы</h1>
-            <?php if (mysqli_num_rows($reviews_result) > 0): ?>
-                <div class="reviews-grid">
-                    <?php while ($review = mysqli_fetch_assoc($reviews_result)): ?>
-                        <div class="review-content">
-                            <?php if (!empty($review['program_name'])): ?>
-                                <p class="review-program">
-                                    <strong><?php echo htmlspecialchars($review['program_name']); ?></strong>
-                                </p>
-                            <?php endif; ?>
 
-                            <p class="review-text"><?php echo htmlspecialchars($review['comment']); ?></p>
-
-                            <div class="reviewer">
-                                <img src="<?php echo htmlspecialchars($review['avatar'] ?? 'img/default-avatar.png'); ?>"
-                                    alt="<?php echo htmlspecialchars($review['name']); ?>" class="reviewer-img">
-                                <p class="reviewer-name"><?php echo htmlspecialchars($review['name']); ?></p>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
+            <div class="any-filter-container" style="margin-bottom: 30px;">
+                <div class="sort-container">
+                    <select id="programFilter" class="sort-select">
+                        <option value="0">Все программы</option>
+                        <?php
+                        // Сбрасываем указатель результата, если он использовался выше
+                        mysqli_data_seek($all_programs_result, 0);
+                        while ($prog = mysqli_fetch_assoc($all_programs_result)):
+                            ?>
+                            <option value="<?php echo $prog['id']; ?>" <?php echo ($selected_program_id == $prog['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($prog['name']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
                 </div>
-            <?php else: ?>
-                <p>Пока нет отзывов</p>
-            <?php endif; ?>
+            </div>
+
+            <div id="reviews-ajax-container">
+                <?php include 'includes/reviews_fetch.php'; ?>
+            </div>
         </div>
     </section>
-
     <section class="about_end">
         <div class="container">
             <div class="about_end-text">
@@ -145,6 +157,50 @@
     <?php include 'includes/footer.php'; ?>
 
     <script src="js/reviews.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.location.hash === '#reviews-section') {
+                const reviewsSection = document.getElementById('reviews-section');
+                if (reviewsSection) {
+                    // Небольшая задержка, чтобы браузер успел отрисовать стили
+                    setTimeout(() => {
+                        reviewsSection.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+
+            const filterSelect = document.getElementById('programFilter');
+            const reviewsContainer = document.getElementById('reviews-ajax-container');
+
+            filterSelect.addEventListener('change', function () {
+                const programId = this.value;
+
+                // Визуальная индикация загрузки (опционально)
+                reviewsContainer.style.opacity = '0.5';
+
+                // Запрос к серверу за обновленным контентом
+                fetch(`includes/reviews_fetch.php?program_id=${programId}&ajax=1`)
+                    .then(response => response.text())
+                    .then(html => {
+                        reviewsContainer.innerHTML = html;
+                        reviewsContainer.style.opacity = '1';
+
+                        // Обновляем URL без перезагрузки страницы, чтобы работали ссылки
+                        const url = new URL(window.location.href);
+                        if (programId > 0) {
+                            url.searchParams.set('program_id', programId);
+                        } else {
+                            url.searchParams.delete('program_id');
+                        }
+                        window.history.pushState({}, '', url);
+                    })
+                    .catch(error => {
+                        console.error('Ошибка фильтрации:', error);
+                        reviewsContainer.style.opacity = '1';
+                    });
+            });
+        });
+    </script>
 </body>
 
 </html>

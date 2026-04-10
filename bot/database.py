@@ -74,7 +74,12 @@ class Database:
         try:
             cursor = self.connection.cursor()
             query = """
-                SELECT b.id, p.name as program_name, b.event_date, b.event_date as end_date
+                SELECT 
+                    b.id, 
+                    p.name as program_name, 
+                    b.event_date, 
+                    b.event_location, 
+                    b.guest_count
                 FROM bookings b
                 JOIN users u ON b.user_id = u.id
                 JOIN programs p ON b.program_id = p.id

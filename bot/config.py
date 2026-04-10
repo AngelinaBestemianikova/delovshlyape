@@ -29,12 +29,12 @@ COMPANY_INFO = """
 CONTACTS = """
 📞 *Контакты компании*:
 
-☎️ Телефон: +375 (44) 823-26-78
-📧 Email: info@delovshlyape.com
-🌐 Сайт: www.delovshlyape.com
+☎️ Телефон: [+375 (44) 823-26-78](tel:+375448232678)
+📧 Email: [info@delovshlyape.com](mailto:info@delovshlyape.com)
+🌐 Сайт: [www.delovshlyape.com](http://www.delovshlyape.com)
 
 📱 *Социальные сети*:
-   - Instagram: @delovshlyape
-   - Facebook: @Delovshlyape
-   - Telegram: @delovshlyape
+   - [Instagram](https://www.instagram.com/)
+   - [Facebook](https://www.facebook.com/)
+   - [Telegram](https://t.me/)
 """
