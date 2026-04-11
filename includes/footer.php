@@ -26,7 +26,7 @@
           <p>+375 (44) 823-26-78<br>info@delovshlyape.com</p>
         </div>
 
-        <div class="social-links">
+        <div class="social-links social-links-footer">
           <div class="social-icons">
             <a href="#" class="social-icon">
               <img src="images/telegram.svg" alt="Telegram">
@@ -50,8 +50,44 @@
         </div>
       </div>
       <div class="footer-map">
-        <img src="images/map.png" alt="map" class="map-image">
+        <div id="footerMap"></div>
       </div>
     </div>
   </div>
 </footer>
+<script type="text/javascript">
+  ymaps.ready(function () {
+    var officeCoords = [53.922037, 27.527375];
+
+    var footerMap = new ymaps.Map("footerMap", {
+      center: officeCoords,
+      zoom: 15,
+      controls: ['zoomControl']
+    }, {
+      autoFitToViewport: 'always'
+    });
+
+    // Важно: принудительно обновляем размер через мгновение после создания
+    setTimeout(function () {
+      footerMap.container.fitToViewport();
+    }, 100);
+
+    var officePlacemark = new ymaps.Placemark(officeCoords, {
+      balloonContentHeader: 'Дело в шляпе',
+      balloonContentBody: 'пр-т Победителей 39, Минск',
+      hintContent: 'Нажмите, чтобы проложить маршрут'
+    }, {
+      preset: 'islands#redDotIconWithCaption'
+    });
+
+    officePlacemark.events.add('click', function () {
+      window.open('https://yandex.by/maps/-/CPrOaH5~', '_blank');
+    });
+
+    footerMap.geoObjects.add(officePlacemark);
+
+    window.addEventListener('resize', function () {
+      footerMap.container.fitToViewport();
+    });
+  });
+</script>

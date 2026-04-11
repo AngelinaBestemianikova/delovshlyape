@@ -41,12 +41,16 @@ $_SESSION['email'] = $user['email'];
 $_SESSION['phone'] = $user['phone'];
 
 // Получаем аннулированные бронирования для уведомлений
+// Добавляем условие: дата события должна быть больше или равна сегодняшней
 $notifications_query = "
     SELECT b.*, p.name as program_name, b.status as booking_status, p.is_archived as p_archived
     FROM bookings b
     JOIN programs p ON b.program_id = p.id
-    WHERE b.user_id = $client_id AND (b.status = 'canceled' OR b.status = 'archived')
+    WHERE b.user_id = $client_id 
+      AND (b.status = 'canceled' OR b.status = 'archived')
+      AND b.event_date >= CURDATE() 
     ORDER BY b.id DESC";
+
 $notifications_result = mysqli_query($link, $notifications_query);
 $notifications = mysqli_fetch_all($notifications_result, MYSQLI_ASSOC);
 
@@ -122,6 +126,33 @@ unset($_SESSION['booking_success']);
     <section class="profile-section">
         <div class="container">
             <h2>Личный кабинет</h2>
+
+            <?php if (!empty($notifications)): ?>
+                <div id="user-notifications" class="notif-wrapper" style="margin-bottom: 30px;">
+                    <div class="notif-dropdown"
+                        style="display: block; position: static; width: 100%; border: 1px solid #eee; border-radius: 18px;">
+
+                        <div class="notif-header"
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background-color: #f9f9f9;">
+
+                            <h4 id="user-dropdown-title" onclick="toggleNotifs(true)"
+                                style="margin: 0; cursor: pointer; user-select: none;">
+                                Сообщения (
+                                <?= count($notifications) ?>)
+                            </h4>
+
+                            <span id="close-notif-btn" onclick="toggleNotifs(false)"
+                                style="cursor: pointer; font-size: 28px; line-height: 1; color: #999; user-select: none;">&times;</span>
+                        </div>
+
+                        <div id="user-notif-content" style="display: block; border-top: 1px solid #eee;">
+                            <div id="user-notif-slider-container"></div>
+                        </div>
+
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="profile-wrapper">
                 <div class="profile-info">
                     <div class="info-item">
@@ -147,33 +178,8 @@ unset($_SESSION['booking_success']);
                 </div>
             </div>
 
-            <?php if (!empty($notifications)): ?>
-                <div id="user-notifications" class="notif-wrapper" style="margin-bottom: 30px;">
-                    <div class="notif-dropdown"
-                        style="display: block; position: static; width: 100%; border: 1px solid #eee; border-radius: 18px;">
-
-                        <div class="notif-header"
-                            style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background-color: #f9f9f9;">
-
-                            <h4 id="user-dropdown-title" onclick="toggleNotifs(true)"
-                                style="margin: 0; cursor: pointer; user-select: none;">
-                                Сообщения (<?= count($notifications) ?>)
-                            </h4>
-
-                            <span id="close-notif-btn" onclick="toggleNotifs(false)"
-                                style="cursor: pointer; font-size: 28px; line-height: 1; color: #999; user-select: none;">&times;</span>
-                        </div>
-
-                        <div id="user-notif-content" style="display: block; border-top: 1px solid #eee;">
-                            <div id="user-notif-slider-container"></div>
-                        </div>
-
-                    </div>
-                </div>
-            <?php endif; ?>
-
             <div class="bookings-section">
-                <h2>Мои бронирования</h2>
+                <h2 style="margin-top: 40px">Мои бронирования</h2>
 
                 <div class="tabs">
                     <button class="tab-button active" data-tab="active-tab">Предстоящие</button>
@@ -484,8 +490,8 @@ unset($_SESSION['booking_success']);
                     В ближайшее время наш менеджер свяжется с вами для уточнения деталей
                 </span>
                 
-                <div class="slider-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap:10px">
-                        <button class="btn-del" onclick="event.stopPropagation(); deleteNotification(${n.id});" style="padding: 10px; width: 150px; cursor:pointer;">
+                <div class="slider-actions" style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap:10px">
+                        <button class="btn-del" onclick="event.stopPropagation(); deleteNotification(${n.id});" style="padding: 10px; width: 150px; cursor:pointer; display: none">
                                 Удалить
                         </button>    
                 <div class="nav-side">

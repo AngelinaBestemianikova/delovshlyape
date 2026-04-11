@@ -16,7 +16,6 @@
 
 <body>
     <?php include 'includes/header.php'; ?>
-
     <div class="contact-page">
         <div class="container">
             <div class="contact-grid">
@@ -100,7 +99,7 @@
                             </div>
                         </div>
                     </div>
-                    <img src="./images/map.png" class="map" alt="map">
+                    <div id="pageMap" class="map"></div>
                 </div>
             </div>
         </div>
@@ -113,6 +112,43 @@
     </div>
 
     <?php include 'includes/footer.php'; ?>
+    <script type="text/javascript">
+        ymaps.ready(function () {
+            var officeCoords = [53.922037, 27.527375]; // Координаты Победителей 39
+
+            var pageMap = new ymaps.Map("pageMap", {
+                center: officeCoords,
+                zoom: 15,
+                controls: ['zoomControl']
+            }, {
+                autoFitToViewport: 'always'
+            });
+
+            var officePlacemark = new ymaps.Placemark(officeCoords, {
+                balloonContentHeader: 'Дело в шляпе',
+                balloonContentBody: 'пр-т Победителей 39, Минск',
+                hintContent: 'Нажмите, чтобы открыть карту'
+            }, {
+                preset: 'islands#redDotIconWithCaption'
+            });
+
+            // Открытие Яндекса при клике на метку
+            officePlacemark.events.add('click', function () {
+                window.open('https://yandex.by/maps/-/CHALu-Zp', '_blank');
+            });
+
+            pageMap.geoObjects.add(officePlacemark);
+
+            // Принудительная подгонка под размеры контейнера
+            setTimeout(function () {
+                pageMap.container.fitToViewport();
+            }, 100);
+
+            window.addEventListener('resize', function () {
+                pageMap.container.fitToViewport();
+            });
+        });
+    </script>
 </body>
 
 </html>

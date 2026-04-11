@@ -126,7 +126,7 @@
                     <select id="programFilter" class="sort-select">
                         <option value="0">Все программы</option>
                         <?php
-                        // Сбрасываем указатель результата, если он использовался выше
+                        // Сбрасываем указатель результата
                         mysqli_data_seek($all_programs_result, 0);
                         while ($prog = mysqli_fetch_assoc($all_programs_result)):
                             ?>
@@ -159,46 +159,69 @@
     <script src="js/reviews.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.location.hash === '#reviews-section') {
-                const reviewsSection = document.getElementById('reviews-section');
-                if (reviewsSection) {
-                    // Небольшая задержка, чтобы браузер успел отрисовать стили
-                    setTimeout(() => {
-                        reviewsSection.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                }
-            }
-
             const filterSelect = document.getElementById('programFilter');
             const reviewsContainer = document.getElementById('reviews-ajax-container');
 
-            filterSelect.addEventListener('change', function () {
-                const programId = this.value;
+            // 1. Принудительный сброс при загрузке (Ctrl+R)
+            // Если вам нужно, чтобы фильтр СОВСЕМ не сохранялся после перезагрузки:
+            if (performance.navigation.type === 1) { // type 1 означает перезагрузку (Reload)
+                filterSelect.value = "0";
+                const url = new URL(window.location.href);
+                url.searchParams.delete('program_id');
+                url.searchParams.delete('page');
+                window.history.replaceState({}, '', url);
+            }
 
-                // Визуальная индикация загрузки (опционально)
+            // Функция смены страницы и фильтрации
+            window.changePage = function (page) {
+                const programId = filterSelect.value;
                 reviewsContainer.style.opacity = '0.5';
 
-                // Запрос к серверу за обновленным контентом
-                fetch(`includes/reviews_fetch.php?program_id=${programId}&ajax=1`)
+                fetch(`includes/reviews_fetch.php?program_id=${programId}&page=${page}&ajax=1`)
                     .then(response => response.text())
                     .then(html => {
                         reviewsContainer.innerHTML = html;
                         reviewsContainer.style.opacity = '1';
 
-                        // Обновляем URL без перезагрузки страницы, чтобы работали ссылки
+                        // Прокрутка
+                        if (page > 1 || programId > 0) {
+                            document.getElementById('reviews-section').scrollIntoView({ behavior: 'smooth' });
+                        }
+
+                        // ОБНОВЛЯЕМ URL только если выбрана программа или страница не первая
                         const url = new URL(window.location.href);
                         if (programId > 0) {
                             url.searchParams.set('program_id', programId);
                         } else {
                             url.searchParams.delete('program_id');
                         }
-                        window.history.pushState({}, '', url);
-                    })
-                    .catch(error => {
-                        console.error('Ошибка фильтрации:', error);
-                        reviewsContainer.style.opacity = '1';
+
+                        if (page > 1) {
+                            url.searchParams.set('page', page);
+                        } else {
+                            url.searchParams.delete('page');
+                        }
+
+                        // Используем replaceState вместо pushState, чтобы не захламлять историю назад-вперед
+                        window.history.replaceState({}, '', url);
                     });
+            };
+
+            // Слушатель фильтра
+            filterSelect.addEventListener('change', function () {
+                changePage(1);
             });
+
+            // ЛОГИКА СБРОСА: если страница загружена без GET-параметров в PHP, 
+            // но они висят в строке браузера (от прошлых переходов) — чистим их.
+            <?php if (!isset($_GET['program_id'])): ?>
+                const cleanUrl = new URL(window.location.href);
+                if (cleanUrl.searchParams.has('program_id')) {
+                    cleanUrl.searchParams.delete('program_id');
+                    cleanUrl.searchParams.delete('page');
+                    window.history.replaceState({}, '', cleanUrl);
+                }
+            <?php endif; ?>
         });
     </script>
 </body>

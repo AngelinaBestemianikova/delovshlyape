@@ -47,49 +47,6 @@ $programs_result = mysqli_query($link, $programs_query);
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <style>
-        /* Убираем горизонтальный скролл всей страницы (важно для мобильных) */
-        html,
-        body {
-            max-width: 100%;
-            overflow-x: hidden;
-        }
-
-        /* Настраиваем ТОЛЬКО контейнер, в котором лежит карта */
-        .form-row-special .field-group {
-            width: 100%;
-            display: block;
-            /* Чтобы инпут и карта не встали в одну строку */
-        }
-
-        /* Настраиваем саму карту */
-        #map {
-            width: 100% !important;
-            /* Всегда по ширине родителя */
-            aspect-ratio: 16 / 9;
-            /* Пропорциональное изменение высоты */
-            min-height: 200px;
-            max-height: 450px;
-            border-radius: 12px;
-            margin-top: 10px;
-            box-sizing: border-box;
-        }
-
-        /* Если браузер старый и не знает aspect-ratio, зададим высоту по умолчанию */
-        @supports not (aspect-ratio: 16/9) {
-            #map {
-                height: 400px;
-            }
-
-            @media (max-width: 768px) {
-                #map {
-                    height: 250px;
-                }
-            }
-        }
-    </style>
-
 </head>
 
 <body>
@@ -291,17 +248,19 @@ $programs_result = mysqli_query($link, $programs_query);
         });
     </script>
     <script type="text/javascript">
+        // 1. ПЕРЕМЕННАЯ ТЕПЕРЬ ГЛОБАЛЬНАЯ
+        var isAddressValid = false;
+
         ymaps.ready(init);
 
         function init() {
-            // Координаты зоны (Минск + ~20км от МКАД)
             var allowedBounds = [
                 [53.78, 27.35], // Юго-запад
                 [54.02, 27.75]  // Северо-восток
             ];
 
             var myMap = new ymaps.Map("map", {
-                center: [53.90, 27.56], // Центр Минска
+                center: [53.90, 27.56],
                 zoom: 10,
                 controls: ['zoomControl']
             }, {
@@ -309,7 +268,6 @@ $programs_result = mysqli_query($link, $programs_query);
                 autoFitToViewport: 'always'
             });
 
-            // Этот код пересчитывает размеры карты при ресайзе окна или повороте телефона
             window.addEventListener('resize', function () {
                 myMap.container.fitToViewport();
             });
@@ -317,24 +275,23 @@ $programs_result = mysqli_query($link, $programs_query);
             var myPlacemark;
             var inputField = document.getElementById('suggest');
 
-            // Настройка поисковых подсказок
+            // Настройка поисковых подсказок БЕЗ организаций (только адреса)
             var suggestView = new ymaps.SuggestView('suggest', {
                 boundedBy: allowedBounds,
-                strictBounds: true
+                strictBounds: true,
+                provider: 'yandex#map', // Использовать провайдер карты (убирает лишние подписи организаций)
+                results: 5
             });
 
-            // 2. Событие при выборе адреса из подсказок
             suggestView.events.add('select', function (e) {
                 var address = e.get('item').value;
                 geocode(address);
             });
 
-            // 3. Событие при потере фокуса (если ввели адрес и кликнули мимо)
             inputField.addEventListener('change', function () {
                 geocode(this.value);
             });
 
-            // 4. Событие клика по карте
             myMap.events.add('click', function (e) {
                 var coords = e.get('coords');
                 if (ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
@@ -344,23 +301,23 @@ $programs_result = mysqli_query($link, $programs_query);
                 }
             });
 
-            // Функция: получаем адрес по координатам
             function updateAddressByCoords(coords) {
                 movePlacemark(coords);
-
                 ymaps.geocode(coords, { results: 1 }).then(function (res) {
                     var firstGeoObject = res.geoObjects.get(0);
                     if (firstGeoObject) {
                         var address = firstGeoObject.getAddressLine();
                         inputField.value = address;
-                        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                        isAddressValid = true; // Теперь меняет глобальную переменную
                     }
                 });
             }
 
-            // Функция: получаем координаты по тексту
             function geocode(address) {
-                if (!address) return;
+                if (!address) {
+                    isAddressValid = false;
+                    return;
+                }
 
                 ymaps.geocode(address, {
                     boundedBy: allowedBounds,
@@ -373,16 +330,17 @@ $programs_result = mysqli_query($link, $programs_query);
                         if (ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
                             myMap.setCenter(coords, 15);
                             movePlacemark(coords);
+                            isAddressValid = true; // Теперь меняет глобальную переменную
                         } else {
+                            isAddressValid = false;
                             alert("Адрес находится вне зоны обслуживания.");
                         }
                     } else {
-                        console.log("Адрес не найден");
+                        isAddressValid = false;
                     }
                 });
             }
 
-            // Вспомогательная функция для перемещения метки
             function movePlacemark(coords) {
                 if (myPlacemark) {
                     myPlacemark.geometry.setCoordinates(coords);
@@ -397,25 +355,31 @@ $programs_result = mysqli_query($link, $programs_query);
 
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('bookingForm');
+            const inputField = document.getElementById('suggest');
+
+            inputField.addEventListener('input', function () {
+                isAddressValid = false;
+            });
+
+            form.addEventListener('submit', function (e) {
+                // Теперь проверка работает корректно
+                if (!isAddressValid) {
+                    e.preventDefault();
+                    alert("Пожалуйста, введите корректный адрес или отметьте точку на карте.");
+                    inputField.focus();
+                }
+            });
 
             form.addEventListener('keydown', function (e) {
-                // Если нажат Enter
                 if (e.keyCode === 13) {
-                    // Проверяем, на чем именно нажат Enter
-                    // Если это НЕ кнопка отправки (type="submit") и НЕ текстовое поле (textarea)
                     const tagName = e.target.tagName.toLowerCase();
                     const type = e.target.type;
 
                     if (tagName !== 'textarea' && type !== 'submit') {
-                        e.preventDefault(); // Блокируем отправку формы
-
-                        // Если это поле адреса, вызываем поиск на карте (для удобства)
+                        e.preventDefault();
                         if (e.target.id === 'suggest') {
-                            // Функция geocode подхватит изменения сама через событие change 
-                            // или можно вызвать её принудительно, если она доступна в области видимости
-                            e.target.blur(); // Убираем фокус, чтобы сработало событие 'change'
+                            e.target.blur();
                         }
-
                         return false;
                     }
                 }
