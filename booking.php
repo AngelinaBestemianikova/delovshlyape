@@ -2,8 +2,17 @@
 session_start();
 require_once 'includes/db.php';
 
-// Check if program is specified
-$program = isset($_GET['program']) ? $_GET['program'] : '';
+$booking_form_data = (isset($_SESSION['booking_form_data']) && is_array($_SESSION['booking_form_data']))
+    ? $_SESSION['booking_form_data']
+    : [];
+
+// Программа: после ошибки бронирования — из формы, иначе из ?program=
+$program = '';
+if (!empty($booking_form_data['program'])) {
+    $program = $booking_form_data['program'];
+} elseif (isset($_GET['program'])) {
+    $program = $_GET['program'];
+}
 
 // If user is not logged in, redirect to login with return URL
 if (!isset($_SESSION['name'])) {
@@ -25,7 +34,7 @@ if (isset($_SESSION['client_id'])) {
 }
 
 // Get all programs for the dropdown
-$programs_query = "SELECT id, name FROM programs ORDER BY name";
+$programs_query = "SELECT id, name, max_children FROM programs ORDER BY name";
 $programs_result = mysqli_query($link, $programs_query);
 ?>
 <!DOCTYPE html>
@@ -126,7 +135,9 @@ $programs_result = mysqli_query($link, $programs_query);
                             <select name="program" id="program-select" required>
                                 <option value="">Выберите программу</option>
                                 <?php while ($program_row = mysqli_fetch_assoc($programs_result)): ?>
-                                    <option value="<?php echo htmlspecialchars($program_row['name']); ?>" <?php echo ($program == $program_row['name']) ? 'selected' : ''; ?>>
+                                    <option value="<?php echo htmlspecialchars($program_row['name']); ?>"
+                                        data-max-children="<?php echo (int) $program_row['max_children']; ?>"
+                                        <?php echo ($program == $program_row['name']) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($program_row['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
@@ -141,7 +152,8 @@ $programs_result = mysqli_query($link, $programs_query);
                     <div class="form-row form-row-special">
                         <div class="field-group">
                             <input type="text" name="celebrant"
-                                placeholder="У кого планируется праздник? (например: девочка Аня, любит петь)" required>
+                                placeholder="У кого планируется праздник? (например: девочка Аня, любит петь)" required
+                                value="<?php echo isset($booking_form_data['celebrant']) ? htmlspecialchars($booking_form_data['celebrant']) : ''; ?>">
                             <?php if (isset($_SESSION['booking_errors']['celebrant'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['celebrant']); ?></span>
@@ -151,16 +163,18 @@ $programs_result = mysqli_query($link, $programs_query);
 
                     <div class="form-row">
                         <div class="field-group">
-                            <input type="number" min="1" max="25" name="age" placeholder="Сколько лет имениннику?"
-                                required>
+                            <input type="number" min="1" max="18" name="age" placeholder="Сколько лет имениннику?"
+                                required
+                                value="<?php echo (isset($booking_form_data['age']) && $booking_form_data['age'] !== '') ? htmlspecialchars((string) (int) $booking_form_data['age']) : ''; ?>">
                             <?php if (isset($_SESSION['booking_errors']['age'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['age']); ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="field-group">
-                            <input type="number" min="1" max="200" name="guests" placeholder="Планируемое кол-во гостей"
-                                required>
+                            <input type="number" min="1" name="guests" id="guests-input"
+                                placeholder="Планируемое кол-во гостей" required
+                                value="<?php echo (isset($booking_form_data['guests']) && $booking_form_data['guests'] !== '') ? htmlspecialchars((string) (int) $booking_form_data['guests']) : ''; ?>">
                             <?php if (isset($_SESSION['booking_errors']['guests'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['guests']); ?></span>
@@ -170,7 +184,8 @@ $programs_result = mysqli_query($link, $programs_query);
 
                     <div class="form-row form-row-special">
                         <div class="field-group">
-                            <input type="text" name="location" id="suggest" placeholder="Введите адрес..." required>
+                            <input type="text" name="location" id="suggest" placeholder="Введите адрес..." required
+                                value="<?php echo isset($booking_form_data['location']) ? htmlspecialchars($booking_form_data['location']) : ''; ?>">
                             <div id="map"></div>
                         </div>
                     </div>
@@ -179,7 +194,8 @@ $programs_result = mysqli_query($link, $programs_query);
                         <div class="field-group">
                             <input type="date" id="event_date" name="event_date"
                                 placeholder="Планируемая дата праздника" required
-                                min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
+                                min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
+                                value="<?php echo isset($booking_form_data['event_date']) ? htmlspecialchars($booking_form_data['event_date']) : ''; ?>">
                             <?php if (isset($_SESSION['booking_errors']['event_date'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['event_date']); ?></span>
@@ -187,7 +203,7 @@ $programs_result = mysqli_query($link, $programs_query);
                         </div>
                     </div>
 
-                    <textarea name="wishes" placeholder="Пожелания к празднику"></textarea>
+                    <textarea name="wishes" placeholder="Пожелания к празднику"><?php echo isset($booking_form_data['wishes']) ? htmlspecialchars($booking_form_data['wishes']) : ''; ?></textarea>
 
                     <div class="form-disclaimer">
                         <button type="submit" class="primary-button">Отправить</button>
@@ -195,7 +211,9 @@ $programs_result = mysqli_query($link, $programs_query);
                                 href="#">политики конфиденциальности</a></p>
                     </div>
                 </form>
-                <?php unset($_SESSION['booking_errors']); ?>
+                <?php
+                unset($_SESSION['booking_errors'], $_SESSION['booking_form_data']);
+                ?>
             </div>
         </div>
     </section>
@@ -207,8 +225,44 @@ $programs_result = mysqli_query($link, $programs_query);
         document.addEventListener("DOMContentLoaded", function () {
             const programSelect = document.getElementById("program-select");
             const dateInput = document.getElementById("event_date");
+            const guestsInput = document.getElementById("guests-input");
 
             let fpInstance = null;
+
+            /** Минимальная дата мероприятия — завтра (как на сервере и в атрибуте min у input). */
+            function getTomorrowDate() {
+                const d = new Date();
+                d.setDate(d.getDate() + 1);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            }
+
+            function parseYmdLocal(str) {
+                const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+                if (!m) return null;
+                const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+                d.setHours(0, 0, 0, 0);
+                return isNaN(d.getTime()) ? null : d;
+            }
+
+            function clampGuestsToMax(max) {
+                if (!(max > 0) || !guestsInput.value) return;
+                const v = parseInt(guestsInput.value, 10);
+                if (!isNaN(v) && v > max) guestsInput.value = String(max);
+            }
+
+            function syncGuestsMaxFromProgram() {
+                const opt = programSelect.options[programSelect.selectedIndex];
+                const max = opt && opt.dataset.maxChildren ? parseInt(opt.dataset.maxChildren, 10) : NaN;
+                if (max > 0) {
+                    guestsInput.max = max;
+                    guestsInput.setAttribute("title", "Максимум для выбранной программы: " + max);
+                    clampGuestsToMax(max);
+                } else {
+                    guestsInput.removeAttribute("max");
+                    guestsInput.removeAttribute("title");
+                }
+            }
 
             function updateCalendar(programName) {
                 const formData = new FormData();
@@ -221,27 +275,42 @@ $programs_result = mysqli_query($link, $programs_query);
                 })
                     .then(res => res.json())
                     .then(data => {
+                        if (typeof data.max_children === "number" && data.max_children > 0) {
+                            guestsInput.max = data.max_children;
+                            guestsInput.setAttribute("title", "Максимум для выбранной программы: " + data.max_children);
+                            clampGuestsToMax(data.max_children);
+                        }
                         if (data.unavailable_dates) {
                             if (fpInstance) {
                                 fpInstance.destroy(); // переинициализация
                             }
 
-                            fpInstance = flatpickr(dateInput, {
-                                minDate: "today",
+                            const minEventDate = getTomorrowDate();
+                            const fpOpts = {
+                                minDate: minEventDate,
                                 dateFormat: "Y-m-d",
-                                disable: data.unavailable_dates
-                            });
+                                disable: data.unavailable_dates || []
+                            };
+                            if (dateInput.value) {
+                                const parsed = parseYmdLocal(dateInput.value);
+                                if (parsed && parsed.getTime() >= minEventDate.getTime()) {
+                                    fpOpts.defaultDate = dateInput.value;
+                                }
+                            }
+                            fpInstance = flatpickr(dateInput, fpOpts);
                         }
                     });
             }
 
             programSelect.addEventListener("change", () => {
+                syncGuestsMaxFromProgram();
                 const selectedProgram = programSelect.value;
                 if (selectedProgram) {
                     updateCalendar(selectedProgram);
                 }
             });
 
+            syncGuestsMaxFromProgram();
             if (programSelect.value) {
                 updateCalendar(programSelect.value);
             }
@@ -258,6 +327,20 @@ $programs_result = mysqli_query($link, $programs_query);
                 [53.78, 27.35], // Юго-запад
                 [54.02, 27.75]  // Северо-восток
             ];
+
+            /** Точность геокодера Яндекса: только дом (number) или дверь (exact). */
+            function getGeocoderPrecision(geoObject) {
+                try {
+                    var meta = geoObject.properties.get("metaDataProperty.GeocoderMetaData");
+                    return meta && meta.precision ? String(meta.precision).toLowerCase() : "";
+                } catch (err) {
+                    return "";
+                }
+            }
+
+            function isHouseLevelPrecision(precision) {
+                return precision === "exact" || precision === "number";
+            }
 
             var myMap = new ymaps.Map("map", {
                 center: [53.90, 27.56],
@@ -302,14 +385,32 @@ $programs_result = mysqli_query($link, $programs_query);
             });
 
             function updateAddressByCoords(coords) {
+                if (!ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
+                    isAddressValid = false;
+                    return;
+                }
                 movePlacemark(coords);
                 ymaps.geocode(coords, { results: 1 }).then(function (res) {
                     var firstGeoObject = res.geoObjects.get(0);
-                    if (firstGeoObject) {
-                        var address = firstGeoObject.getAddressLine();
-                        inputField.value = address;
-                        isAddressValid = true; // Теперь меняет глобальную переменную
+                    if (!firstGeoObject) {
+                        isAddressValid = false;
+                        return;
                     }
+                    var gcCoords = firstGeoObject.geometry.getCoordinates();
+                    if (!ymaps.util.bounds.containsPoint(allowedBounds, gcCoords)) {
+                        isAddressValid = false;
+                        alert("Адрес находится вне зоны обслуживания.");
+                        return;
+                    }
+                    var precision = getGeocoderPrecision(firstGeoObject);
+                    var address = firstGeoObject.getAddressLine();
+                    inputField.value = address;
+                    if (!isHouseLevelPrecision(precision)) {
+                        isAddressValid = false;
+                        alert("Выберите точку ближе к дому или укажите адрес с номером дома (не только город или улицу).");
+                        return;
+                    }
+                    isAddressValid = true;
                 });
             }
 
@@ -325,19 +426,26 @@ $programs_result = mysqli_query($link, $programs_query);
                     results: 1
                 }).then(function (res) {
                     var obj = res.geoObjects.get(0);
-                    if (obj) {
-                        var coords = obj.geometry.getCoordinates();
-                        if (ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
-                            myMap.setCenter(coords, 15);
-                            movePlacemark(coords);
-                            isAddressValid = true; // Теперь меняет глобальную переменную
-                        } else {
-                            isAddressValid = false;
-                            alert("Адрес находится вне зоны обслуживания.");
-                        }
-                    } else {
+                    if (!obj) {
                         isAddressValid = false;
+                        return;
                     }
+                    var coords = obj.geometry.getCoordinates();
+                    if (!ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
+                        isAddressValid = false;
+                        alert("Адрес находится вне зоны обслуживания.");
+                        return;
+                    }
+                    var precision = getGeocoderPrecision(obj);
+                    if (!isHouseLevelPrecision(precision)) {
+                        isAddressValid = false;
+                        alert("Укажите полный адрес с номером дома (корпус, строение — при необходимости). Недостаточно только названия города или улицы.");
+                        return;
+                    }
+                    inputField.value = obj.getAddressLine();
+                    myMap.setCenter(coords, 15);
+                    movePlacemark(coords);
+                    isAddressValid = true;
                 });
             }
 
@@ -350,6 +458,10 @@ $programs_result = mysqli_query($link, $programs_query);
                     });
                     myMap.geoObjects.add(myPlacemark);
                 }
+            }
+
+            if (inputField.value && inputField.value.trim()) {
+                geocode(inputField.value.trim());
             }
         }
 
@@ -365,7 +477,7 @@ $programs_result = mysqli_query($link, $programs_query);
                 // Теперь проверка работает корректно
                 if (!isAddressValid) {
                     e.preventDefault();
-                    alert("Пожалуйста, введите корректный адрес или отметьте точку на карте.");
+                    alert("Укажите адрес с номером дома в пределах зоны на карте (Минск и окрестности) или выберите точку на карте у подъезда.");
                     inputField.focus();
                 }
             });

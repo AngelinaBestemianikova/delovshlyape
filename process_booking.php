@@ -44,8 +44,8 @@ if ($child_age <= 0 || $child_age > 25)
 if (empty($event_date) || !validateDate($event_date)) {
     $errors['event_date'] = 'Выберите дату со следующего дня и не позднее чем через год';
 }
-if ($guest_count < 1 || $guest_count > 200)
-    $errors['guests'] = 'Некорректное кол-во гостей';
+if ($guest_count < 1)
+    $errors['guests'] = 'Укажите количество гостей';
 if (mb_strlen($child_name) < 2)
     $errors['celebrant'] = 'Минимум 2 символа';
 if (mb_strlen($event_location) < 4)
@@ -66,7 +66,7 @@ $event_location_esc = mysqli_real_escape_string($link, $event_location);
 $wishes_esc = mysqli_real_escape_string($link, $wishes);
 
 // 4. Поиск программы
-$program_sql = "SELECT id, animator_count FROM programs WHERE name = '$program_name_esc'";
+$program_sql = "SELECT id, animator_count, max_children FROM programs WHERE name = '$program_name_esc'";
 $program_result = mysqli_query($link, $program_sql);
 
 if (mysqli_num_rows($program_result) === 0) {
@@ -78,6 +78,23 @@ if (mysqli_num_rows($program_result) === 0) {
 $program = mysqli_fetch_assoc($program_result);
 $program_id = intval($program['id']);
 $animator_count = intval($program['animator_count']);
+$max_children = intval($program['max_children']);
+
+if ($max_children < 1) {
+    $_SESSION['booking_errors'] = ['program' => 'Для программы не задан лимит гостей. Обратитесь к администратору.'];
+    $_SESSION['booking_form_data'] = $_POST;
+    header('Location: booking.php');
+    exit();
+}
+
+if ($guest_count > $max_children) {
+    $_SESSION['booking_errors'] = [
+        'guests' => 'Для этой программы максимум гостей: ' . $max_children,
+    ];
+    $_SESSION['booking_form_data'] = $_POST;
+    header('Location: booking.php');
+    exit();
+}
 
 // 5. Поиск свободных аниматоров (ваша логика верна)
 $animators_query = "SELECT team_member_id FROM animator_programs WHERE program_id = $program_id";

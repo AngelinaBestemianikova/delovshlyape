@@ -52,6 +52,24 @@ $specs = [];
 while ($row = mysqli_fetch_assoc($animator_specs_result)) {
     $specs[$row['team_member_id']][] = $row['name'];
 }
+
+// Получаем фото вместе с названиями программ
+$gallery_result = mysqli_query($link, "
+    SELECT ph.id, ph.path, ph.program_id, ph.created_time, p.name as program_name 
+    FROM photos ph
+    LEFT JOIN programs p ON ph.program_id = p.id 
+    ORDER BY ph.id DESC
+");
+$gallery_photos = mysqli_fetch_all($gallery_result, MYSQLI_ASSOC);
+
+$pending_bookings_count = 0;
+if ($pb = mysqli_query($link, "SELECT COUNT(*) AS c FROM bookings WHERE status = 'pending'")) {
+    $pending_bookings_count = (int) (mysqli_fetch_assoc($pb)['c'] ?? 0);
+}
+$pending_reviews_count = 0;
+if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 'pending'")) {
+    $pending_reviews_count = (int) (mysqli_fetch_assoc($pr)['c'] ?? 0);
+}
 ?>
 
 <!DOCTYPE html>
@@ -86,11 +104,26 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
 
             <!-- Вкладки -->
             <div class="tabs">
-                <button class="tab-button active" data-tab="bookings-tab">Новые заявки</button>
-                <button class="tab-button" data-tab="reviews-tab">Модерация отзывов</button>
+                <button class="tab-button active" data-tab="bookings-tab">
+                    <span class="tab-button__textWrap">
+                        Новые заявки
+                        <?php if ($pending_bookings_count > 0): ?>
+                            <span class="nav-badge"><?= $pending_bookings_count ?></span>
+                        <?php endif; ?>
+                    </span>
+                </button>
+                <button class="tab-button" data-tab="reviews-tab">
+                    <span class="tab-button__textWrap">
+                        Модерация отзывов
+                        <?php if ($pending_reviews_count > 0): ?>
+                            <span class="nav-badge"><?= $pending_reviews_count ?></span>
+                        <?php endif; ?>
+                    </span>
+                </button>
                 <button class="tab-button" data-tab="programs-tab">Программы</button>
                 <button class="tab-button" data-tab="types-tab">Типы программ</button>
                 <button class="tab-button" data-tab="team-tab">Сотрудники</button>
+                <button class="tab-button" data-tab="gallery-tab">Фотогалерея</button>
             </div>
 
             <div class="tab-content" id="bookings-tab">
@@ -131,6 +164,10 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                     $all_bookings = mysqli_query($link, $query);
 
                     while ($row = mysqli_fetch_assoc($all_bookings)):
+                        $event_for_lock = new DateTime($row['event_date']);
+                        $today_for_lock = new DateTime('today');
+                        $event_date_passed = $event_for_lock <= $today_for_lock;
+
                         $status_class = 'status-' . $row['status'];
                         $status_text = [
                             'pending' => 'На уточнении',
@@ -166,7 +203,10 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                             </td>
                             <td><span class="status-badge <?= $status_class ?>"><?= $status_text ?></span></td>
                             <td>
-                                <?php if ($row['status'] == 'pending'): ?>
+                                <?php if ($event_date_passed): ?>
+                                    <span style="color:#999;font-size:0.9em;"
+                                        title="Дата мероприятия наступила или прошла">Статус нельзя изменить</span>
+                                <?php elseif ($row['status'] == 'pending'): ?>
                                     <button class="btn-approve"
                                         onclick="updateBookingStatus(<?= $row['id'] ?>, 'confirmed')">Одобрить</button>
                                     <button class="btn-reject"
@@ -371,6 +411,7 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                     <?php endforeach; ?>
                 </table>
             </div>
+
             <div class="tab-content" id="team-tab" style="display:none;">
                 <h3>Управление сотрудниками</h3>
                 <button class="add-button" onclick="openTeamModal()">Добавить сотрудника</button>
@@ -415,7 +456,60 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                 </table>
             </div>
 
-        </div>
+            <div class="tab-content" id="gallery-tab" style="display:none;">
+                <h3>Управление фотогалереей</h3>
+
+                <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <button class="add-button" onclick="openGalleryModal()">Добавить фото</button>
+
+                    <div
+                        style="margin-left: auto; display: flex; align-items: center; gap: 10px; background: #fff; padding: 8px 15px; border: 1px solid #ddd; border-radius: 8px;">
+                        <label for="gallery-filter">Фильтр программы:</label>
+                        <select id="gallery-filter" onchange="filterGallery()"
+                            style="padding: 5px; border-radius: 4px;">
+                            <option value="all">Все программы</option>
+                            <?php foreach ($programs as $prog): ?>
+                                <option value="<?= $prog['id'] ?>"><?= htmlspecialchars($prog['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <button class="btn-del" id="delete-all-btn" onclick="deletePhotosByProgram()"
+                        style="display: none; background: #ff4d4d; padding: 10px 15px;">
+                        Удалить все фото этой программы
+                    </button>
+                </div>
+
+                <table class="admin-table" id="gallery-table">
+                    <thead>
+                        <tr>
+                            <th>Фото</th>
+                            <th>Программа</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($gallery_photos as $photo): ?>
+                            <tr class="gallery-row" data-program-id="<?= (int) ($photo['program_id'] ?? 0) ?>">
+                                <td style="width: 120px;">
+                                    <img src="<?= $photo['path'] ?>"
+                                        style="width: 100px; height: 70px; object-fit: cover; border-radius: 4px;">
+                                </td>
+                                <td>
+                                    <span
+                                        class="prog-name"><?= htmlspecialchars($photo['program_name'] ?? 'Без программы') ?></span>
+                                </td>
+                                <td style="width: 180px;">
+                                    <button class="btn-edit"
+                                        onclick="editGalleryPhoto(<?= $photo['id'] ?>)">Редактировать</button>
+                                    <button class="btn-del"
+                                        onclick="deleteGalleryPhoto(<?= $photo['id'] ?>)">Удалить</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
     </section>
 
     <div id="modal-container"></div>
@@ -436,13 +530,26 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
         let currentSlide = 0;
         let allMessages = [];
 
+        function escapeHtml(str) {
+            if (str == null || str === undefined) return '';
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
+        }
+
         async function loadMessages() {
             try {
                 const res = await fetch('adminmanage/get_messages.php');
-                allMessages = await res.json();
+                const data = await res.json();
+                if (!Array.isArray(data)) {
+                    console.error('Сообщения недоступны', data);
+                    allMessages = [];
+                } else {
+                    allMessages = data;
+                }
                 renderSlider();
             } catch (e) {
-                console.error("Ошибка загрузки");
+                console.error("Ошибка загрузки", e);
             }
         }
 
@@ -471,18 +578,30 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                 minute: '2-digit'
             });
 
+            const email = m.email || '';
+            const emailLine = email
+                ? `<span class="user-email-text">${escapeHtml(email)}</span>`
+                : '<span class="user-email-missing">Почта не указана</span>';
+
             container.innerHTML = `
     <div class="slider-card">
         <div class="user-meta-info">
            <span class="msg-date">${msgDate}</span>
             <div class="user-contact-column">
-                <span class="user-name-text">${m.first_name} ${m.last_name}</span>
-                <span class="user-phone-black">${m.phone}</span>
+                <span class="user-name-text">${escapeHtml(m.first_name)} ${escapeHtml(m.last_name)}</span>
+                <span class="user-phone-black">${escapeHtml(m.phone)}</span>
+                ${emailLine}
             </div>
         </div>
         
         <div class="msg-text-body">
-            ${m.message}
+            ${escapeHtml(m.message).replace(/\n/g, '<br>')}
+        </div>
+
+        <div class="msg-reply-block">
+            <label class="msg-reply-label" for="contact-reply-${m.id}">Ответить на почту клиенту</label>
+            <textarea id="contact-reply-${m.id}" class="msg-reply-textarea" rows="4" maxlength="10000" placeholder="Текст ответа…"></textarea>
+            <button type="button" class="btn-reply-send" onclick="sendContactReply(${m.id})">Отправить ответ</button>
         </div>
         
         <div class="slider-nav">
@@ -510,6 +629,46 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
             if (!confirm('Удалить это сообщение?')) return;
             await fetch(`adminmanage/delete_message.php?id=${id}`);
             loadMessages();
+        }
+
+        async function sendContactReply(messageId) {
+            const ta = document.getElementById('contact-reply-' + messageId);
+            if (!ta) return;
+            const text = ta.value.trim();
+            if (!text) {
+                alert('Введите текст ответа');
+                return;
+            }
+            const btn = ta.closest('.msg-reply-block')?.querySelector('.btn-reply-send');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch('adminmanage/send_contact_reply.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message_id: messageId, reply: text }),
+                });
+                const raw = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(raw);
+                } catch {
+                    console.error(raw);
+                    alert('Ошибка сервера при отправке');
+                    return;
+                }
+                if (data.success) {
+                    alert('Ответ отправлен на почту клиента');
+                    ta.value = '';
+                    loadMessages();
+                } else {
+                    alert(data.error || 'Не удалось отправить письмо');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка сети');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
         }
 
         loadMessages();
@@ -582,19 +741,8 @@ while ($row = mysqli_fetch_assoc($animator_specs_result)) {
                 alert('Произошла ошибка связи с сервером');
             }
         }
-
-        // // Интеграция в существующую логику переключения табов
-        // document.querySelectorAll('.tab-button').forEach(btn => {
-        //     btn.addEventListener('click', () => {
-        //         const tab = btn.dataset.tab;
-        //         if (tab === 'reviews-tab') {
-        //             renderReviewsTab();
-        //         }
-        //     });
-        // });
     </script>
     <script>
-        // ПЕРЕМЕННЫЕ (Объявляем один раз)
         const teamData = <?php echo json_encode($team_members); ?>;
         const allPrograms = <?php echo json_encode($programs); ?>;
         const currentSpecs = <?php echo json_encode($specs); ?>;

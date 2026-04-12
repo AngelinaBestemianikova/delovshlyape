@@ -26,6 +26,15 @@ if (!isset($_POST['id']) || !isset($_POST['status'])) {
 $id = (int) $_POST['id'];
 $status = mysqli_real_escape_string($link, $_POST['status']);
 
+$lock_check = mysqli_query($link, "SELECT id FROM bookings WHERE id = $id AND DATE(event_date) > CURDATE()");
+if (!$lock_check || mysqli_num_rows($lock_check) === 0) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Нельзя менять статус после наступления даты мероприятия.',
+    ]);
+    exit;
+}
+
 // Пробуем выполнить запрос
 $sql = "UPDATE bookings SET status = '$status' WHERE id = $id";
 $update = mysqli_query($link, $sql);

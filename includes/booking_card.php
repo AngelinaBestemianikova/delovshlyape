@@ -51,10 +51,14 @@ $is_canceled = ($booking['status'] === 'canceled');
 
     <div class="booking-actions">
         <?php if (!$booking['is_past_event']): ?>
-            <?php if (!$is_canceled): ?>
+            <?php if (!$is_canceled && !empty($booking['can_cancel'])): ?>
                 <button class="cancel-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>">
                     Отменить бронь
                 </button>
+            <?php elseif (!$is_canceled): ?>
+                <span class="cancel-label"
+                    title="Отмена возможна только если мероприятие не раньше чем послезавтра">Отмена недоступна
+                    (мероприятие завтра или раньше)</span>
             <?php else: ?>
                 <span class="cancel-label">Заявка аннулирована</span>
             <?php endif; ?>

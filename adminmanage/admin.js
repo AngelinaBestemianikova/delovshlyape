@@ -43,7 +43,15 @@ function renderModal(html, formId, actionUrl) {
       const data = new FormData(e.target);
       try {
         const response = await fetch(actionUrl, { method: "POST", body: data });
-        const result = await response.json();
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch {
+          console.error("Сервер прислал не JSON:", text);
+          alert("Ошибка на сервере (ответ не JSON, см. консоль)");
+          return;
+        }
         if (result.success) {
           location.reload();
         } else {
@@ -51,6 +59,7 @@ function renderModal(html, formId, actionUrl) {
         }
       } catch (err) {
         console.error("Ошибка сохранения:", err);
+        alert("Ошибка связи с сервером");
       }
     };
   }
@@ -211,7 +220,6 @@ function updateBookingStatus(id, status) {
 }
 
 // --- КОМАНДА (Сотрудники) ---
-
 function openTeamModal(member = {}) {
   // Подготавливаем список чекбоксов программ, которые может вести сотрудник
   // Используем глобальный массив allPrograms (убедитесь, что он выведен в PHP)
@@ -287,6 +295,101 @@ async function deleteTeamMember(id, name) {
       console.error("Ошибка удаления:", err);
     }
   }
+}
+
+// --- ФОТОГАЛЕРЕЯ ---
+// 1. Открытие модалки (Добавление/Редактирование)
+function openGalleryModal(photo = {}) {
+  const programOptions = (typeof allPrograms !== "undefined" ? allPrograms : [])
+    .map(
+      (p) =>
+        `<option value="${p.id}" ${photo.program_id == p.id ? "selected" : ""}>${p.name}</option>`,
+    )
+    .join("");
+
+  const modalHTML = `
+        <div class="modal">
+            <div class="modal-close" id="modal-close">×</div>
+            <div class="modal-content">
+                <h3>${photo.id ? "Редактировать" : "Добавить фото"}</h3>
+                <form id="gallery-form">
+                    <input type="hidden" name="id" value="${photo.id || ""}">
+                    <label>Программа:
+                        <select name="program_id" required style="width:100%; padding:8px; margin-top:5px;">
+                            <option value="">-- Выберите программу --</option>
+                            ${programOptions}
+                        </select>
+                    </label>
+                    <label style="display:block; margin-top:15px;">
+                        <input type="file" name="photos[]" accept="image/*" ${photo.id ? "" : "multiple required"}>
+                    </label>
+                    <div class="modal-buttons" style="margin-top:20px;">
+                        <button type="submit" class="add-button">Сохранить</button>
+                        <button type="button" id="modal-cancel">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+
+  renderModal(modalHTML, "gallery-form", "adminmanage/save_gallery.php");
+}
+// 2. Редактирование (загрузка данных через PHP)
+async function editGalleryPhoto(id) {
+  try {
+    const res = await fetch(`adminmanage/get_gallery_photo.php?id=${id}`);
+    const data = await res.json();
+    openGalleryModal(data);
+  } catch (err) {
+    alert("Ошибка загрузки данных");
+  }
+}
+
+// 3. Удаление одного фото
+async function deleteGalleryPhoto(id) {
+  if (!confirm("Удалить это фото?")) return;
+  const res = await fetch(`adminmanage/delete_gallery_photo.php?id=${id}`);
+  if (res.ok) location.reload();
+}
+
+function filterGallery() {
+  const filterValue = document
+    .getElementById("gallery-filter")
+    .value.toString();
+  const rows = document.querySelectorAll(".gallery-row");
+  const deleteBtn = document.getElementById("delete-all-btn");
+
+  rows.forEach((row) => {
+    // Получаем ID из атрибута data-program-id
+    const rowProgramId = row.getAttribute("data-program-id")
+      ? row.getAttribute("data-program-id").toString()
+      : "";
+
+    if (filterValue === "all" || rowProgramId === filterValue) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+
+  // Показываем кнопку удаления, только если выбрана конкретная программа
+  deleteBtn.style.display = filterValue === "all" ? "none" : "block";
+}
+
+// 5. Удаление всех фото выбранной программы
+async function deletePhotosByProgram() {
+  const programId = document.getElementById("gallery-filter").value;
+  const programName =
+    document.getElementById("gallery-filter").options[
+      document.getElementById("gallery-filter").selectedIndex
+    ].text;
+
+  if (!confirm(`Удалить ВСЕ фото программы "${programName}"?`)) return;
+
+  const res = await fetch(
+    `adminmanage/delete_all_program_photos.php?program_id=${programId}`,
+  );
+  const result = await res.json();
+  if (result.success) location.reload();
 }
 
 // --- ВКЛАДКИ (С сохранением в localStorage) ---

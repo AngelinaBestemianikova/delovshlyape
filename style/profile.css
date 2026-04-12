@@ -125,6 +125,12 @@
   background: #ffffff;
   border-radius: 12px;
   padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
   transition:
     transform 0.3s,
     box-shadow 0.3s;
@@ -159,6 +165,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 0 1 auto; /* высота по контенту; пустое место — над блоком кнопки */
 }
 
 .booking-detail-item {
@@ -182,7 +189,8 @@
 }
 
 .booking-actions {
-  margin-top: 15px;
+  margin-top: auto;
+  padding-top: 15px;
   text-align: center;
 }
 
@@ -687,6 +695,7 @@
 /* Обертка самого ряда (слайдер) */
 .bookings-slider-wrapper {
   display: flex;
+  align-items: stretch;
   overflow-x: auto;
   flex-wrap: nowrap;
   justify-content: flex-start;
@@ -708,4 +717,8 @@
 .booking-card-item {
   flex: 0 0 auto; /* Не дает карточкам сжиматься */
   width: 350px; /* Фиксированная ширина карточки */
+  display: flex;
+  flex-direction: column;
+  align-self: stretch; /* на всю высоту ряда вместе с соседями */
+  min-height: 0;
 }

@@ -13,7 +13,7 @@ if (isset($_POST['get_unavailable_dates'])) {
     if ($program_name) {
         // Получаем ID программы и количество требуемых аниматоров
         $program_name_esc = mysqli_real_escape_string($link, $program_name);
-        $program_sql = "SELECT p.id, p.animator_count 
+        $program_sql = "SELECT p.id, p.animator_count, p.max_children 
                        FROM programs p 
                        WHERE p.name = '$program_name_esc'";
         $program_result = mysqli_query($link, $program_sql);
@@ -22,6 +22,7 @@ if (isset($_POST['get_unavailable_dates'])) {
             $program = mysqli_fetch_assoc($program_result);
             $program_id = intval($program['id']);
             $required_animators = intval($program['animator_count']);
+            $response['max_children'] = intval($program['max_children']);
 
             // Получаем список дат, где недостаточно свободных аниматоров
             $query = "

@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
     CallbackContext
 )
-from config import TOKEN, COMPANY_INFO, CONTACTS
+from config import TOKEN, COMPANY_INFO, CONTACTS_HTML
 from database import Database
 
 # Настройка логирования
@@ -57,8 +57,9 @@ async def companyinfo(update: Update, context: CallbackContext) -> None:
 
 async def contacts(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(
-        CONTACTS,
-        parse_mode='Markdown'
+        CONTACTS_HTML,
+        parse_mode='HTML',
+        disable_web_page_preview=True,
     )
 
 async def reservations_start(update: Update, context: CallbackContext) -> int:

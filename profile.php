@@ -74,13 +74,17 @@ $past_bookings = [];
 while ($booking = mysqli_fetch_assoc($bookings_result)) {
     $event_date = new DateTime($booking['event_date']);
     $today = new DateTime('today'); // Берем начало текущего дня для корректного сравнения
+    $tomorrow = new DateTime('tomorrow');
 
     $is_past_event = $event_date < $today;
     $has_review = $booking['has_review'] > 0;
+    // Отмена: только если дата мероприятия позже завтра (не завтра и не сегодня)
+    $can_cancel = ($booking['status'] !== 'canceled') && ($event_date > $tomorrow);
 
     $booking['display_date'] = $event_date->format('d.m.Y');
     $booking['is_past_event'] = $is_past_event;
     $booking['has_review'] = $has_review;
+    $booking['can_cancel'] = $can_cancel;
 
     if ($is_past_event) {
         $past_bookings[] = $booking;
