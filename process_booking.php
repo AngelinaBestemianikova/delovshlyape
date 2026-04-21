@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/staff_schedule.php';
 
 if (!isset($_SESSION['client_id'])) {
     header('Location: login.php');
@@ -96,25 +97,8 @@ if ($guest_count > $max_children) {
     exit();
 }
 
-// 5. Поиск свободных аниматоров (ваша логика верна)
-$animators_query = "SELECT team_member_id FROM animator_programs WHERE program_id = $program_id";
-$animators_result = mysqli_query($link, $animators_query);
-
-$booked_animators_query = "
-    SELECT DISTINCT ba.team_member_id FROM booked_animators ba
-    JOIN bookings b ON ba.booking_id = b.id
-    WHERE b.event_date = '$event_date_esc' AND b.status != 'canceled'";
-$booked_result = mysqli_query($link, $booked_animators_query);
-
-$booked_ids = [];
-while ($row = mysqli_fetch_assoc($booked_result))
-    $booked_ids[] = $row['team_member_id'];
-
-$capable_ids = [];
-while ($row = mysqli_fetch_assoc($animators_result))
-    $capable_ids[] = $row['team_member_id'];
-
-$free_animators = array_values(array_diff($capable_ids, $booked_ids));
+// 5. Поиск свободных аниматоров (график + брони)
+$free_animators = staff_schedule_get_free_animator_ids($link, $program_id, $event_date_esc);
 
 if (count($free_animators) < $animator_count) {
     $_SESSION['booking_errors'] = ['animators' => 'Нет свободных аниматоров на эту дату'];

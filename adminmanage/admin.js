@@ -392,6 +392,120 @@ async function deletePhotosByProgram() {
   if (result.success) location.reload();
 }
 
+// --- Смена аниматоров в заявке ---
+function escapeHtmlBooking(str) {
+  if (str == null || str === undefined) return "";
+  const d = document.createElement("div");
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+async function openBookingAnimatorsModal(bookingId) {
+  const fd = new FormData();
+  fd.append("booking_id", String(bookingId));
+  let data;
+  try {
+    const res = await fetch("adminmanage/booking_animators_get.php", { method: "POST", body: fd });
+    data = await res.json();
+  } catch (e) {
+    console.error(e);
+    alert("Ошибка сети");
+    return;
+  }
+  if (!data.success) {
+    alert(data.message || "Ошибка загрузки");
+    return;
+  }
+  const animatorCount = data.animator_count;
+  const animators = data.animators || [];
+  const currentIds = data.current_animator_ids || [];
+
+  if (animators.length < animatorCount) {
+    alert(
+      `Недостаточно свободных аниматоров: доступно ${animators.length}, нужно ${animatorCount}.`,
+    );
+    return;
+  }
+
+  let selectsHtml = "";
+  for (let i = 0; i < animatorCount; i++) {
+    const cur = currentIds[i] != null ? String(currentIds[i]) : "";
+    selectsHtml += `<label class="booking-anim-slot"><span>Аниматор ${i + 1}:</span><select class="booking-anim-sel" data-slot="${i}">`;
+    selectsHtml += `<option value="">— выберите —</option>`;
+    animators.forEach((a) => {
+      const sel = String(a.id) === cur ? " selected" : "";
+      selectsHtml += `<option value="${a.id}"${sel}>${escapeHtmlBooking(a.name)}</option>`;
+    });
+    selectsHtml += `</select></label>`;
+  }
+
+  const html = `
+        <div class="modal booking-anim-modal">
+            <div class="modal-close" id="modal-close">×</div>
+            <div class="modal-content">
+                <h3>Смена аниматоров</h3>
+                <form id="booking-anim-form" class="booking-anim-form">
+                    <p class="booking-anim-program">${escapeHtmlBooking(data.program_name)}</p>
+                    <p class="booking-anim-date">Дата: ${escapeHtmlBooking(data.event_date)}</p>
+                    <p class="booking-anim-desc">Доступны только аниматоры без других броней на эту дату, с рабочим днём по графику и с подходящей программой.</p>
+                    ${selectsHtml}
+                    <div class="modal-buttons">
+                        <button type="submit">Сохранить</button>
+                        <button type="button" id="modal-cancel">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+
+  const container = document.getElementById("modal-container");
+  container.innerHTML = html;
+  container.classList.add("active");
+  document.body.style.overflow = "hidden";
+
+  const closeBtn = document.getElementById("modal-close");
+  const cancelBtn = document.getElementById("modal-cancel");
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (cancelBtn) cancelBtn.onclick = closeModal;
+
+  document.getElementById("booking-anim-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const sels = container.querySelectorAll(".booking-anim-sel");
+    const chosen = [];
+    const seen = new Set();
+    for (const s of sels) {
+      const v = s.value;
+      if (!v) {
+        alert("Выберите всех аниматоров");
+        return;
+      }
+      if (seen.has(v)) {
+        alert("Нельзя выбрать одного и того же аниматора дважды");
+        return;
+      }
+      seen.add(v);
+      chosen.push(parseInt(v, 10));
+    }
+    let saveData;
+    try {
+      const saveRes = await fetch("adminmanage/booking_animators_save.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId, animator_ids: chosen }),
+      });
+      saveData = await saveRes.json();
+    } catch (e) {
+      console.error(e);
+      alert("Ошибка сети при сохранении");
+      return;
+    }
+    if (!saveData.success) {
+      alert(saveData.message || "Ошибка сохранения");
+      return;
+    }
+    location.reload();
+  };
+}
+
 // --- ВКЛАДКИ (С сохранением в localStorage) ---
 document.querySelectorAll(".tab-button").forEach((btn) => {
   btn.addEventListener("click", () => {

@@ -11,18 +11,47 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (isset($_SESSION['client_id'])) {
     $client_id = $_SESSION['client_id'];
-    // Считаем количество подходящих записей
-    $count_query = "
-        SELECT COUNT(*) as total 
-        FROM bookings 
-        WHERE user_id = $client_id 
-          AND (status = 'canceled' OR status = 'archived')
-          AND event_date >= CURDATE()";
+    $isAnimator = isset($_SESSION['is_animator']) && (int) $_SESSION['is_animator'] === 1;
 
-    $count_result = mysqli_query($link, $count_query);
-    if ($count_result) {
-        $count_data = mysqli_fetch_assoc($count_result);
-        $notif_count = (int) $count_data['total'];
+    if ($isAnimator) {
+        mysqli_query($link, "
+            CREATE TABLE IF NOT EXISTS animator_notifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                animator_user_id INT NOT NULL,
+                message TEXT NOT NULL,
+                event_date DATE NULL,
+                event_location VARCHAR(255) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                is_read TINYINT(1) NOT NULL DEFAULT 0,
+                INDEX idx_animator_user_read (animator_user_id, is_read)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        $count_query = "
+            SELECT COUNT(*) as total
+            FROM animator_notifications
+            WHERE animator_user_id = $client_id
+              AND is_read = 0
+              AND event_date >= CURDATE()
+        ";
+        $count_result = mysqli_query($link, $count_query);
+        if ($count_result) {
+            $count_data = mysqli_fetch_assoc($count_result);
+            $notif_count = (int) ($count_data['total'] ?? 0);
+        }
+    } else {
+        // Считаем количество подходящих записей
+        $count_query = "
+            SELECT COUNT(*) as total 
+            FROM bookings 
+            WHERE user_id = $client_id 
+              AND (status = 'canceled' OR status = 'archived')
+              AND event_date >= CURDATE()";
+
+        $count_result = mysqli_query($link, $count_query);
+        if ($count_result) {
+            $count_data = mysqli_fetch_assoc($count_result);
+            $notif_count = (int) $count_data['total'];
+        }
     }
 }
 
@@ -67,13 +96,13 @@ $menu_result = mysqli_query($link, $menu_query);
                     <?php endwhile; ?>
                 </div>
             </div>
+            <a href="contact.php">Контакты</a>
             <a href="profile.php" class="profile-link">
                 Профиль
                 <?php if ($notif_count > 0): ?>
                     <span class="nav-badge"><?= $notif_count ?></span>
                 <?php endif; ?>
             </a>
-            <a href="contact.php">Контакты</a>
         </div>
         <button class="primary-button booking-button"
             onclick="window.location.href='booking.php'">Забронировать</button>

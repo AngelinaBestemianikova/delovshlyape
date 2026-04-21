@@ -1,51 +1,71 @@
 <?php
-// Включаем отображение ошибок для отладки
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// ВАЖНО: Если файл в папке adminmanage, путь должен быть таким:
-require_once '../includes/db.php';
-// Если файл в корне, оставьте: require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/staff_schedule.php';
 
 session_start();
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-// Проверка админа
 if (!isset($_SESSION['is_admin']) || (int) $_SESSION['is_admin'] !== 1) {
     echo json_encode(['success' => false, 'message' => 'Ошибка доступа: вы не админ']);
     exit;
 }
 
-// Проверка входящих данных
-if (!isset($_POST['id']) || !isset($_POST['status'])) {
+if (!isset($_POST['id'], $_POST['status'])) {
     echo json_encode(['success' => false, 'message' => 'Не переданы ID или статус']);
     exit;
 }
 
 $id = (int) $_POST['id'];
-$status = mysqli_real_escape_string($link, $_POST['status']);
+$allowed = ['pending', 'confirmed', 'canceled', 'archived'];
+$status = (string) $_POST['status'];
+if (!in_array($status, $allowed, true)) {
+    echo json_encode(['success' => false, 'message' => 'Недопустимый статус']);
+    exit;
+}
 
-$lock_check = mysqli_query($link, "SELECT id FROM bookings WHERE id = $id AND DATE(event_date) > CURDATE()");
-if (!$lock_check || mysqli_num_rows($lock_check) === 0) {
+$lock = $link->prepare('SELECT id FROM bookings WHERE id = ? AND DATE(event_date) >= CURDATE() LIMIT 1');
+if (!$lock) {
+    echo json_encode(['success' => false, 'message' => 'Ошибка проверки даты']);
+    exit;
+}
+$lock->bind_param('i', $id);
+$lock->execute();
+$okLock = $lock->get_result()->fetch_assoc();
+$lock->close();
+if (!$okLock) {
     echo json_encode([
         'success' => false,
-        'message' => 'Нельзя менять статус после наступления даты мероприятия.',
+        'message' => 'Нельзя менять статус: дата мероприятия уже прошла.',
     ]);
     exit;
 }
 
-// Пробуем выполнить запрос
-$sql = "UPDATE bookings SET status = '$status' WHERE id = $id";
-$update = mysqli_query($link, $sql);
-
-if ($update) {
-    // Проверяем, была ли реально затронута хоть одна строка
-    if (mysqli_affected_rows($link) > 0) {
-        echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Запись не найдена или статус уже такой же']);
+if ($status === 'confirmed') {
+    $err = staff_schedule_validate_booking_can_confirm($link, $id);
+    if ($err !== null) {
+        echo json_encode(['success' => false, 'message' => $err]);
+        exit;
     }
+}
+
+$stmt = $link->prepare('UPDATE bookings SET status = ? WHERE id = ?');
+if (!$stmt) {
+    echo json_encode(['success' => false, 'message' => 'Ошибка подготовки запроса']);
+    exit;
+}
+$stmt->bind_param('si', $status, $id);
+if (!$stmt->execute()) {
+    $err = $stmt->error;
+    $stmt->close();
+    echo json_encode(['success' => false, 'message' => 'Ошибка SQL: ' . $err]);
+    exit;
+}
+$affected = (int) $stmt->affected_rows;
+$stmt->close();
+
+if ($affected > 0) {
+    echo json_encode(['success' => true]);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Ошибка SQL: ' . mysqli_error($link)]);
+    echo json_encode(['success' => false, 'message' => 'Запись не найдена или статус уже такой же']);
 }

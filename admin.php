@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/db.php';
+require_once 'includes/staff_schedule.php';
 session_start();
 
 if (!isset($_SESSION['is_admin']) || (int) $_SESSION['is_admin'] !== 1) {
@@ -70,6 +71,82 @@ $pending_reviews_count = 0;
 if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 'pending'")) {
     $pending_reviews_count = (int) (mysqli_fetch_assoc($pr)['c'] ?? 0);
 }
+
+// Пагинация для вкладки бронирований
+$bookings_limit = 15;
+$bookings_page = isset($_GET['bookings_page']) ? (int) $_GET['bookings_page'] : 1;
+if ($bookings_page < 1) {
+    $bookings_page = 1;
+}
+$bookings_offset = ($bookings_page - 1) * $bookings_limit;
+$bookings_total_rows = 0;
+if ($bookings_count_result = mysqli_query($link, "SELECT COUNT(*) AS total FROM bookings")) {
+    $bookings_total_rows = (int) (mysqli_fetch_assoc($bookings_count_result)['total'] ?? 0);
+}
+$bookings_total_pages = max(1, (int) ceil($bookings_total_rows / $bookings_limit));
+if ($bookings_page > $bookings_total_pages) {
+    $bookings_page = $bookings_total_pages;
+    $bookings_offset = ($bookings_page - 1) * $bookings_limit;
+}
+
+// Пагинация для вкладки модерации отзывов
+$reviews_limit = 10;
+$reviews_page = isset($_GET['reviews_page']) ? (int) $_GET['reviews_page'] : 1;
+if ($reviews_page < 1) {
+    $reviews_page = 1;
+}
+$reviews_offset = ($reviews_page - 1) * $reviews_limit;
+$reviews_total_rows = 0;
+if ($reviews_count_result = mysqli_query($link, "SELECT COUNT(*) AS total FROM reviews")) {
+    $reviews_total_rows = (int) (mysqli_fetch_assoc($reviews_count_result)['total'] ?? 0);
+}
+$reviews_total_pages = max(1, (int) ceil($reviews_total_rows / $reviews_limit));
+if ($reviews_page > $reviews_total_pages) {
+    $reviews_page = $reviews_total_pages;
+    $reviews_offset = ($reviews_page - 1) * $reviews_limit;
+}
+
+// Пагинация для вкладки программ
+$programs_limit = 15;
+$programs_page = isset($_GET['programs_page']) ? (int) $_GET['programs_page'] : 1;
+if ($programs_page < 1) {
+    $programs_page = 1;
+}
+$programs_offset = ($programs_page - 1) * $programs_limit;
+$programs_total_rows = 0;
+if ($programs_count_result = mysqli_query($link, "SELECT COUNT(*) AS total FROM programs")) {
+    $programs_total_rows = (int) (mysqli_fetch_assoc($programs_count_result)['total'] ?? 0);
+}
+$programs_total_pages = max(1, (int) ceil($programs_total_rows / $programs_limit));
+if ($programs_page > $programs_total_pages) {
+    $programs_page = $programs_total_pages;
+    $programs_offset = ($programs_page - 1) * $programs_limit;
+}
+$programs_tab_result = mysqli_query($link, "
+    SELECT p.*, t.name AS type_name, t.is_archived AS type_is_archived
+    FROM programs p
+    LEFT JOIN program_types t ON p.type_id = t.id
+    ORDER BY p.id DESC
+    LIMIT $programs_limit OFFSET $programs_offset
+");
+$programs_tab_rows = $programs_tab_result ? mysqli_fetch_all($programs_tab_result, MYSQLI_ASSOC) : [];
+
+function admin_build_page_url(array $updates): string
+{
+    $params = $_GET;
+    foreach ($updates as $key => $value) {
+        if ($value === null) {
+            unset($params[$key]);
+        } else {
+            $params[$key] = $value;
+        }
+    }
+    $query = http_build_query($params);
+    return 'admin.php' . ($query !== '' ? '?' . $query : '');
+}
+
+staff_schedule_sync_period_and_defaults($link);
+$staff_schedule_meta_row = staff_schedule_get_meta_row($link);
 ?>
 
 <!DOCTYPE html>
@@ -120,6 +197,7 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         <?php endif; ?>
                     </span>
                 </button>
+                <button class="tab-button" data-tab="schedule-tab">График сотрудников</button>
                 <button class="tab-button" data-tab="programs-tab">Программы</button>
                 <button class="tab-button" data-tab="types-tab">Типы программ</button>
                 <button class="tab-button" data-tab="team-tab">Сотрудники</button>
@@ -144,7 +222,8 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                 p.name as p_name, 
                 u.first_name, 
                 u.phone,
-                GROUP_CONCAT(tm.name SEPARATOR ', ') as animator_names,
+                GROUP_CONCAT(DISTINCT tm.name ORDER BY tm.name SEPARATOR ', ') as animator_names,
+                GROUP_CONCAT(DISTINCT ba.team_member_id ORDER BY ba.team_member_id SEPARATOR ',') as animator_ids,
                 -- Проверка конфликтов: ищем другие активные брони тех же аниматоров на ту же дату
                 (SELECT COUNT(*) 
                  FROM booked_animators ba2 
@@ -159,7 +238,12 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
             LEFT JOIN booked_animators ba ON b.id = ba.booking_id
             LEFT JOIN team_members tm ON ba.team_member_id = tm.id
             GROUP BY b.id
-            ORDER BY b.id DESC";
+            ORDER BY
+                (b.event_date < CURDATE()) ASC,
+                CASE WHEN b.event_date >= CURDATE() THEN b.event_date END ASC,
+                CASE WHEN b.event_date < CURDATE() THEN b.event_date END DESC,
+                b.created_at DESC
+            LIMIT $bookings_limit OFFSET $bookings_offset";
 
                     $all_bookings = mysqli_query($link, $query);
 
@@ -167,6 +251,24 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         $event_for_lock = new DateTime($row['event_date']);
                         $today_for_lock = new DateTime('today');
                         $event_date_passed = $event_for_lock <= $today_for_lock;
+
+                        $animator_id_list = [];
+                        if (!empty($row['animator_ids'])) {
+                            foreach (explode(',', (string) $row['animator_ids']) as $idPart) {
+                                $idPart = (int) trim($idPart);
+                                if ($idPart > 0) {
+                                    $animator_id_list[] = $idPart;
+                                }
+                            }
+                        }
+                        $schedule_graph_conflict = false;
+                        foreach ($animator_id_list as $animId) {
+                            if (!staff_schedule_animator_available_per_graph($link, $animId, $row['event_date'], $staff_schedule_meta_row)) {
+                                $schedule_graph_conflict = true;
+                                break;
+                            }
+                        }
+                        $other_booking_conflict = (int) ($row['conflicts'] ?? 0) > 0;
 
                         $status_class = 'status-' . $row['status'];
                         $status_text = [
@@ -188,13 +290,23 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                             <td>
                                 <?php if ($row['animator_names']): ?>
                                     <?= htmlspecialchars($row['animator_names']) ?><br>
-                                    <?php if ($row['conflicts'] > 0): ?>
+                                    <?php if ($other_booking_conflict && $schedule_graph_conflict): ?>
+                                        <span style="color: #ff4d4d;">Занят (другая подтверждённая бронь)</span><br>
+                                        <span style="color: #ff4d4d;">По графику не работает в этот день</span>
+                                    <?php elseif ($other_booking_conflict): ?>
                                         <span style="color: #ff4d4d;">Занят на эту дату!</span>
+                                    <?php elseif ($schedule_graph_conflict): ?>
+                                        <span style="color: #ff4d4d;">По графику не работает в этот день</span>
                                     <?php else: ?>
                                         <span style="color: #2ecc71;">Свободен</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span style="color: #999;">Не назначен</span>
+                                <?php endif; ?>
+                                <?php if (!$event_date_passed && $row['status'] !== 'canceled'): ?>
+                                    <br>
+                                    <button type="button" class="btn-edit" style="margin-top:8px;"
+                                        onclick="openBookingAnimatorsModal(<?= (int) $row['id'] ?>)">Изменить</button>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -219,6 +331,42 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         </tr>
                     <?php endwhile; ?>
                 </table>
+                <?php if ($bookings_total_pages > 1): ?>
+                    <div class="pagination-container">
+                        <div class="pagination-wrapper">
+                            <?php $bookings_prev_page = max(1, $bookings_page - 1); ?>
+                            <button class="pag-arrow prev" <?= ($bookings_page <= 1) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['bookings_page' => $bookings_prev_page])) ?>'"
+                                title="Назад">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 18L9 12L15 6"
+                                        stroke="<?= ($bookings_page <= 1) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+
+                            <div class="pagination-dots">
+                                <?php for ($i = 1; $i <= $bookings_total_pages; $i++): ?>
+                                    <span class="dot <?= ($i === $bookings_page) ? 'active' : '' ?>"
+                                        style="background-color: <?= ($i === $bookings_page) ? '#8773ff' : 'rgb(135, 115, 255, 0.2)' ?>"
+                                        onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['bookings_page' => $i])) ?>'"
+                                        title="Страница <?= $i ?>"></span>
+                                <?php endfor; ?>
+                            </div>
+
+                            <?php $bookings_next_page = min($bookings_total_pages, $bookings_page + 1); ?>
+                            <button class="pag-arrow next" <?= ($bookings_page >= $bookings_total_pages) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['bookings_page' => $bookings_next_page])) ?>'"
+                                title="Вперед">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 6L15 12L9 18"
+                                        stroke="<?= ($bookings_page >= $bookings_total_pages) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="tab-content" id="reviews-tab" style="display:none;">
@@ -238,7 +386,8 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
             FROM reviews r
             JOIN users u ON r.user_id = u.id
             JOIN programs p ON r.program_id = p.id
-            ORDER BY r.id DESC";
+            ORDER BY r.id DESC
+            LIMIT $reviews_limit OFFSET $reviews_offset";
 
                     $all_reviews = mysqli_query($link, $reviews_query);
 
@@ -290,14 +439,78 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         </tr>
                     <?php endwhile; ?>
                 </table>
+                <?php if ($reviews_total_pages > 1): ?>
+                    <div class="pagination-container">
+                        <div class="pagination-wrapper">
+                            <?php $reviews_prev_page = max(1, $reviews_page - 1); ?>
+                            <button class="pag-arrow prev" <?= ($reviews_page <= 1) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['reviews_page' => $reviews_prev_page])) ?>'"
+                                title="Назад">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 18L9 12L15 6"
+                                        stroke="<?= ($reviews_page <= 1) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+
+                            <div class="pagination-dots">
+                                <?php for ($i = 1; $i <= $reviews_total_pages; $i++): ?>
+                                    <span class="dot <?= ($i === $reviews_page) ? 'active' : '' ?>"
+                                        style="background-color: <?= ($i === $reviews_page) ? '#8773ff' : 'rgb(135, 115, 255, 0.2)' ?>"
+                                        onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['reviews_page' => $i])) ?>'"
+                                        title="Страница <?= $i ?>"></span>
+                                <?php endfor; ?>
+                            </div>
+
+                            <?php $reviews_next_page = min($reviews_total_pages, $reviews_page + 1); ?>
+                            <button class="pag-arrow next" <?= ($reviews_page >= $reviews_total_pages) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['reviews_page' => $reviews_next_page])) ?>'"
+                                title="Вперед">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 6L15 12L9 18"
+                                        stroke="<?= ($reviews_page >= $reviews_total_pages) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
+
+            <div class="tab-content staff-schedule-panel" id="schedule-tab" style="display:none;">
+                <h3>График аниматоров</h3>
+                <div class="schedule-status-wrap">
+                    <div class="schedule-status-top">
+                        <p class="schedule-status-main">
+                            <span class="schedule-status-label">Статус:</span>
+                            <span id="staff-schedule-status" class="schedule-status-value" aria-live="polite"></span>
+                        </p>
+                    </div>
+                    <p class="schedule-status-hint">Отражает, утверждён ли график на период планирования и можно ли клиентам выбирать даты бронирования в этом диапазоне.</p>
+                </div>
+
+                <div class="schedule-toolbar-row">
+                    <label for="staff-schedule-month">Месяц: </label>
+                    <select id="staff-schedule-month"></select>
+                    <button type="button" class="add-button schedule-tab-btn" id="staff-schedule-reload">Обновить с сервера</button>
+                </div>
+                <div class="schedule-table-scroll">
+                    <table class="admin-table staff-schedule-table" id="staff-schedule-table">
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p class="schedule-actions-line">
+                    <button type="button" class="add-button schedule-tab-btn" id="staff-schedule-save">Сохранить черновик</button>
+                    <button type="button" class="add-button schedule-tab-btn" id="staff-schedule-approve">Утвердить график</button>
+                </p>
+            </div>
+
             <!-- Программы -->
             <div class="tab-content" id="programs-tab" style="display:none;">
                 <h3>Программы</h3>
                 <button class="add-button" onclick="openProgramModal()">Добавить программу</button>
                 <table class="admin-table">
                     <tr>
-                        <th>ID</th>
                         <th>Тип программы</th>
                         <th>Название</th>
                         <th>Описание</th>
@@ -314,7 +527,7 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                     {
                         return mb_strlen($text) > $length ? mb_substr($text, 0, $length) . '…' : $text;
                     }
-                    foreach ($programs as $p):
+                    foreach ($programs_tab_rows as $p):
                         $isArchived = (int) $p['is_archived'] === 1;
                         $isParentArchived = (int) $p['type_is_archived'] === 1;
 
@@ -323,8 +536,10 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         ?>
                         <tr class="<?= $shouldBeGray ? 'row-archived' : '' ?>"
                             style="<?= $shouldBeGray ? 'opacity: 0.5; filter: grayscale(1);' : '' ?>">
-                            <td><?= $p['id'] ?></td>
-                            <td><?= $p['type_id'] ?></td>
+                            <td><?php
+                                $typeLabel = trim((string) ($p['type_name'] ?? ''));
+                                echo $typeLabel !== '' ? htmlspecialchars($typeLabel) : '—';
+                            ?></td>
                             <td><?= htmlspecialchars($p['name']) ?></td>
                             <td><?= shortenText($p['description']) ?></td>
                             <td><?= shortenText($p['included_services']) ?></td>
@@ -363,6 +578,42 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         </tr>
                     <?php endforeach; ?>
                 </table>
+                <?php if ($programs_total_pages > 1): ?>
+                    <div class="pagination-container">
+                        <div class="pagination-wrapper">
+                            <?php $programs_prev_page = max(1, $programs_page - 1); ?>
+                            <button class="pag-arrow prev" <?= ($programs_page <= 1) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['programs_page' => $programs_prev_page])) ?>'"
+                                title="Назад">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 18L9 12L15 6"
+                                        stroke="<?= ($programs_page <= 1) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+
+                            <div class="pagination-dots">
+                                <?php for ($i = 1; $i <= $programs_total_pages; $i++): ?>
+                                    <span class="dot <?= ($i === $programs_page) ? 'active' : '' ?>"
+                                        style="background-color: <?= ($i === $programs_page) ? '#8773ff' : 'rgb(135, 115, 255, 0.2)' ?>"
+                                        onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['programs_page' => $i])) ?>'"
+                                        title="Страница <?= $i ?>"></span>
+                                <?php endfor; ?>
+                            </div>
+
+                            <?php $programs_next_page = min($programs_total_pages, $programs_page + 1); ?>
+                            <button class="pag-arrow next" <?= ($programs_page >= $programs_total_pages) ? 'disabled' : '' ?>
+                                onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['programs_page' => $programs_next_page])) ?>'"
+                                title="Вперед">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 6L15 12L9 18"
+                                        stroke="<?= ($programs_page >= $programs_total_pages) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Типы программ -->
@@ -371,7 +622,6 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                 <button class="add-button" onclick="openTypeModal()">Добавить тип</button>
                 <table class="admin-table">
                     <tr>
-                        <th>ID</th>
                         <th>Название</th>
                         <th>Описание</th>
                         <th>Изображение</th>
@@ -383,7 +633,6 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                         ?>
                         <tr class="<?= $isArchivedType ? 'row-archived' : '' ?>"
                             style="<?= $isArchivedType ? 'opacity: 0.5; filter: grayscale(1); background-color: #f9f9f9;' : '' ?>">
-                            <td><?= $t['id'] ?></td>
                             <td><?= htmlspecialchars($t['name']) ?></td>
                             <td><?= shortenText($t['description']) ?></td>
                             <td>
@@ -417,7 +666,6 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                 <button class="add-button" onclick="openTeamModal()">Добавить сотрудника</button>
                 <table class="admin-table">
                     <tr>
-                        <th>ID</th>
                         <th>Фото</th>
                         <th>Имя</th>
                         <th>Роль</th>
@@ -427,9 +675,6 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                     </tr>
                     <?php foreach ($team_members as $m): ?>
                         <tr>
-                            <td>
-                                <?= $m['id'] ?>
-                            </td>
                             <td>
                                 <img src="<?= $m['path_image'] ?: 'images/default-avatar.png' ?>"
                                     style="width:50px; height:50px; object-fit:cover; border-radius:50%;">
@@ -847,6 +1092,317 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
                 alert('Сервер недоступен');
             }
         }
+    </script>
+    <script>
+        (function () {
+            const statusEl = document.getElementById('staff-schedule-status');
+            const monthSel = document.getElementById('staff-schedule-month');
+            const tableBody = document.querySelector('#staff-schedule-table tbody');
+            const btnSave = document.getElementById('staff-schedule-save');
+            const btnApprove = document.getElementById('staff-schedule-approve');
+            const btnReload = document.getElementById('staff-schedule-reload');
+            if (!statusEl || !monthSel || !tableBody || !btnSave || !btnApprove || !btnReload) return;
+
+            let periodStart = '';
+            let periodEnd = '';
+            let scheduleStatus = 'draft';
+            let members = [];
+            const scheduleState = {};
+
+            function escapeHtml(str) {
+                if (str == null) return '';
+                const d = document.createElement('div');
+                d.textContent = String(str);
+                return d.innerHTML;
+            }
+
+            function pad2(n) {
+                return String(n).padStart(2, '0');
+            }
+
+            function enumerateMonths(fromYmd, toYmd) {
+                const out = [];
+                const a = fromYmd.split('-').map(Number);
+                const b = toYmd.split('-').map(Number);
+                let y = a[0], m = a[1];
+                const endY = b[0], endM = b[1];
+                while (y < endY || (y === endY && m <= endM)) {
+                    out.push(`${y}-${pad2(m)}`);
+                    m += 1;
+                    if (m > 12) {
+                        m = 1;
+                        y += 1;
+                    }
+                }
+                return out;
+            }
+
+            const MONTHS_RU = [
+                'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+                'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
+            ];
+
+            /** Отображение в селекте: «месяц — год» */
+            function formatMonthYearRu(ym) {
+                const [y, mo] = ym.split('-').map(Number);
+                const name = MONTHS_RU[mo - 1] || ym;
+                return `${name} - ${y}`;
+            }
+
+            function daysInMonth(ym) {
+                const [y, mo] = ym.split('-').map(Number);
+                const last = new Date(y, mo, 0).getDate();
+                const days = [];
+                for (let d = 1; d <= last; d++) {
+                    const ds = `${y}-${pad2(mo)}-${pad2(d)}`;
+                    if (ds >= periodStart && ds <= periodEnd) {
+                        days.push(ds);
+                    }
+                }
+                return days;
+            }
+
+            function forEachDateInPeriod(fn) {
+                const a = new Date(periodStart + 'T12:00:00');
+                const b = new Date(periodEnd + 'T12:00:00');
+                for (let d = new Date(a); d.getTime() <= b.getTime(); d.setDate(d.getDate() + 1)) {
+                    const y = d.getFullYear();
+                    const m = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const ds = `${y}-${pad2(m)}-${pad2(day)}`;
+                    fn(ds, d.getDay());
+                }
+            }
+
+            function getWorkForDate(mid, ds) {
+                if (scheduleState[mid] && Object.prototype.hasOwnProperty.call(scheduleState[mid], ds)) {
+                    return scheduleState[mid][ds];
+                }
+                return 1;
+            }
+
+            function detectModeForMember(mid) {
+                if (!periodStart || !periodEnd) return null;
+                let okAlways = true;
+                let okWeekdays = true;
+                let okWeekendsOnly = true;
+                forEachDateInPeriod((ds, dow) => {
+                    const w = getWorkForDate(mid, ds);
+                    const wk = dow === 0 || dow === 6;
+                    if (w !== 1) okAlways = false;
+                    if (wk) {
+                        if (w !== 0) okWeekdays = false;
+                        if (w !== 1) okWeekendsOnly = false;
+                    } else {
+                        if (w !== 1) okWeekdays = false;
+                        if (w !== 0) okWeekendsOnly = false;
+                    }
+                });
+                if (okAlways) return 'always';
+                if (okWeekdays) return 'weekdays';
+                if (okWeekendsOnly) return 'weekends_only';
+                return null;
+            }
+
+            function applyPatternForMember(mid, mode) {
+                if (!scheduleState[mid]) scheduleState[mid] = {};
+                forEachDateInPeriod((ds, dow) => {
+                    const wk = dow === 0 || dow === 6;
+                    if (mode === 'always') {
+                        scheduleState[mid][ds] = 1;
+                    } else if (mode === 'weekdays') {
+                        scheduleState[mid][ds] = wk ? 0 : 1;
+                    } else if (mode === 'weekends_only') {
+                        scheduleState[mid][ds] = wk ? 1 : 0;
+                    }
+                });
+            }
+
+            function refreshModeRadiosForMember(mid) {
+                const mode = detectModeForMember(mid);
+                const name = 'staff-mode-' + mid;
+                tableBody.querySelectorAll('input[type="radio"][name="' + name + '"]').forEach((r) => {
+                    r.checked = mode !== null && r.value === mode;
+                });
+            }
+
+            function renderStatus() {
+                const isAp = scheduleStatus === 'approved';
+                if (isAp) {
+                    statusEl.innerHTML =
+                        '<span class="status-badge status-confirmed">Утверждён</span> Клиенты могут бронировать даты в периоде планирования (с учётом графика и заявок).';
+                } else {
+                    statusEl.innerHTML =
+                        '<span class="status-badge status-pending">Черновик</span> Бронирование в диапазоне отключено до нажатия «Утвердить график».';
+                }
+            }
+
+            function renderTable() {
+                const ym = monthSel.value;
+                const days = daysInMonth(ym);
+                let thead = '<tr><th class="staff-schedule-name-col staff-schedule-th-corner">Сотрудник</th>';
+                thead += '<th class="staff-schedule-mode-th">Режим</th>';
+                days.forEach((ds) => {
+                    const short = ds.slice(8, 10) + '.' + ds.slice(5, 7);
+                    const dow = new Date(ds + 'T12:00:00').getDay();
+                    const wd = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'][dow];
+                    const weekend = dow === 0 || dow === 6;
+                    const wkClass = weekend ? ' staff-schedule-th--weekend' : '';
+                    thead += `<th class="staff-schedule-day-head${wkClass}" title="${escapeHtml(ds)}">
+                        <span class="staff-schedule-wd">${wd}</span>
+                        <span class="staff-schedule-date-num">${short}</span>
+                    </th>`;
+                });
+                thead += '</tr>';
+
+                let rows = '';
+                members.forEach((mem) => {
+                    const det = detectModeForMember(mem.id);
+                    const cAlways = det === 'always' ? ' checked' : '';
+                    const cWeek = det === 'weekdays' ? ' checked' : '';
+                    const cWend = det === 'weekends_only' ? ' checked' : '';
+                    const nm = 'staff-mode-' + mem.id;
+                    rows += `<tr>
+                        <td class="staff-schedule-name-col">${escapeHtml(mem.name)}</td>
+                        <td class="staff-schedule-mode-col">
+                            <div class="staff-mode-radios">
+                                <label class="staff-mode-option"><input type="radio" name="${nm}" value="always"${cAlways}> всегда</label>
+                                <label class="staff-mode-option"><input type="radio" name="${nm}" value="weekdays"${cWeek}> не в выходные</label>
+                                <label class="staff-mode-option"><input type="radio" name="${nm}" value="weekends_only"${cWend}> только выходные</label>
+                            </div>
+                        </td>`;
+                    days.forEach((ds) => {
+                        const dow = new Date(ds + 'T12:00:00').getDay();
+                        const weekend = dow === 0 || dow === 6;
+                        const wkClass = weekend ? ' staff-schedule-td--weekend' : '';
+                        const v = getWorkForDate(mem.id, ds);
+                        const checked = v === 1 ? 'checked' : '';
+                        rows += `<td${wkClass ? ` class="${wkClass.trim()}"` : ''}><input type="checkbox" class="staff-day-cb" data-mid="${mem.id}" data-date="${escapeHtml(ds)}" ${checked}></td>`;
+                    });
+                    rows += '</tr>';
+                });
+
+                tableBody.parentElement.querySelectorAll('thead').forEach((n) => n.remove());
+                const theadEl = document.createElement('thead');
+                theadEl.innerHTML = thead;
+                tableBody.parentElement.insertBefore(theadEl, tableBody);
+
+                tableBody.innerHTML = rows;
+            }
+
+            tableBody.addEventListener('change', (e) => {
+                const t = e.target;
+                if (!(t instanceof HTMLInputElement)) return;
+                if (t.type === 'radio' && t.name && t.name.indexOf('staff-mode-') === 0) {
+                    const mid = parseInt(t.name.replace('staff-mode-', ''), 10);
+                    if (!Number.isFinite(mid)) return;
+                    applyPatternForMember(mid, t.value);
+                    renderTable();
+                    return;
+                }
+                if (t.type === 'checkbox' && t.classList.contains('staff-day-cb')) {
+                    const mid = parseInt(t.dataset.mid, 10);
+                    const ds = t.dataset.date;
+                    if (!scheduleState[mid]) scheduleState[mid] = {};
+                    scheduleState[mid][ds] = t.checked ? 1 : 0;
+                    refreshModeRadiosForMember(mid);
+                }
+            });
+
+            async function loadSchedule() {
+                statusEl.innerHTML = '<span class="schedule-status-muted">Загрузка графика…</span>';
+                try {
+                    const res = await fetch('adminmanage/staff_schedule_get.php');
+                    const data = await res.json();
+                    if (!data.ok) {
+                        statusEl.innerHTML = `<span class="schedule-status-error">${escapeHtml(data.error || 'Ошибка загрузки')}</span>`;
+                        return;
+                    }
+                    periodStart = data.period_start;
+                    periodEnd = data.period_end;
+                    scheduleStatus = data.status || 'draft';
+                    members = Array.isArray(data.members) ? data.members : [];
+                    Object.keys(scheduleState).forEach((k) => delete scheduleState[k]);
+                    const sch = data.schedule || {};
+                    Object.keys(sch).forEach((midKey) => {
+                        const mid = parseInt(midKey, 10);
+                        scheduleState[mid] = Object.assign({}, sch[midKey]);
+                    });
+                    members.forEach((m) => {
+                        if (!scheduleState[m.id]) scheduleState[m.id] = {};
+                    });
+
+                    const months = enumerateMonths(periodStart.slice(0, 7), periodEnd.slice(0, 7));
+                    monthSel.innerHTML = months.map((ym) => `<option value="${ym}">${escapeHtml(formatMonthYearRu(ym))}</option>`).join('');
+                    const cur = new Date();
+                    const defYm = `${cur.getFullYear()}-${pad2(cur.getMonth() + 1)}`;
+                    if (months.includes(defYm)) {
+                        monthSel.value = defYm;
+                    } else {
+                        monthSel.value = months[0] || defYm;
+                    }
+
+                    renderStatus();
+                    renderTable();
+                } catch (e) {
+                    console.error(e);
+                    statusEl.innerHTML = '<span class="schedule-status-error">Ошибка сети при загрузке графика.</span>';
+                }
+            }
+
+            monthSel.addEventListener('change', renderTable);
+
+            async function postSave(action) {
+                const msg = action === 'approve'
+                    ? 'Утвердить график? После этого клиенты смогут бронировать даты в периоде согласно отмеченным рабочим дням.'
+                    : 'Сохранить изменения как черновик?';
+                if (!confirm(msg)) return;
+                btnSave.disabled = true;
+                btnApprove.disabled = true;
+                try {
+                    const res = await fetch('adminmanage/staff_schedule_save.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: action === 'approve' ? 'approve' : 'save', schedule: scheduleState }),
+                    });
+                    const data = await res.json();
+                    if (!data.ok) {
+                        alert(data.error || 'Не удалось сохранить');
+                        return;
+                    }
+                    scheduleStatus = data.status || scheduleStatus;
+                    renderStatus();
+                    const nPending = parseInt(data.bookings_marked_pending, 10) || 0;
+                    let doneMsg = action === 'approve' ? 'График утверждён.' : 'Черновик сохранён.';
+                    if (nPending > 0) {
+                        doneMsg += ` ${nPending} подтверждённых броней переведены в «На уточнении» (в графике у назначенного сотрудника этот день нерабочий).`;
+                    }
+                    alert(doneMsg);
+                } catch (e) {
+                    console.error(e);
+                    alert('Ошибка сети');
+                } finally {
+                    btnSave.disabled = false;
+                    btnApprove.disabled = false;
+                }
+            }
+
+            btnSave.addEventListener('click', () => postSave('save'));
+            btnApprove.addEventListener('click', () => postSave('approve'));
+            btnReload.addEventListener('click', loadSchedule);
+
+            document.querySelector('[data-tab="schedule-tab"]')?.addEventListener('click', () => {
+                if (!periodStart) {
+                    loadSchedule();
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (localStorage.getItem('adminActiveTab') === 'schedule-tab') {
+                    loadSchedule();
+                }
+            });
+        })();
     </script>
     <script src="adminmanage/admin.js"></script>
     <?php include 'includes/footer.php'; ?>

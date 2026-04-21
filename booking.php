@@ -33,8 +33,8 @@ if (isset($_SESSION['client_id'])) {
     $user_data = mysqli_fetch_assoc($result);
 }
 
-// Get all programs for the dropdown
-$programs_query = "SELECT id, name, max_children FROM programs ORDER BY name";
+// Get only active programs for the dropdown
+$programs_query = "SELECT id, name, max_children FROM programs WHERE is_archived = 0 ORDER BY name";
 $programs_result = mysqli_query($link, $programs_query);
 ?>
 <!DOCTYPE html>

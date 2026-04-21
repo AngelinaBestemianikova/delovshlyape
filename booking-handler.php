@@ -1,9 +1,10 @@
 <?php
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/staff_schedule.php';
 
 $response = [
-    'unavailable_dates' => []
+    'unavailable_dates' => [],
 ];
 
 // Проверка, что запрашивается информация о недоступных датах
@@ -11,7 +12,6 @@ if (isset($_POST['get_unavailable_dates'])) {
     $program_name = $_POST['program'] ?? '';
 
     if ($program_name) {
-        // Получаем ID программы и количество требуемых аниматоров
         $program_name_esc = mysqli_real_escape_string($link, $program_name);
         $program_sql = "SELECT p.id, p.animator_count, p.max_children 
                        FROM programs p 
@@ -20,33 +20,19 @@ if (isset($_POST['get_unavailable_dates'])) {
 
         if ($program_result && mysqli_num_rows($program_result) > 0) {
             $program = mysqli_fetch_assoc($program_result);
-            $program_id = intval($program['id']);
-            $required_animators = intval($program['animator_count']);
-            $response['max_children'] = intval($program['max_children']);
+            $program_id = (int) $program['id'];
+            $required_animators = (int) $program['animator_count'];
+            $response['max_children'] = (int) $program['max_children'];
 
-            // Получаем список дат, где недостаточно свободных аниматоров
-            $query = "
-    SELECT b.event_date, 
-           COUNT(DISTINCT ba.team_member_id) as booked_count,
-           COUNT(DISTINCT CASE WHEN ap.program_id = $program_id THEN ba.team_member_id END) as program_booked_count
-    FROM bookings b
-    LEFT JOIN booked_animators ba ON b.id = ba.booking_id
-    LEFT JOIN animator_programs ap ON ba.team_member_id = ap.team_member_id
-    WHERE b.status != 'canceled'  -- ВАЖНО: не считаем отмененные брони!
-    GROUP BY b.event_date
-    HAVING (
-        -- Проверяем общее количество свободных аниматоров
-        (SELECT COUNT(DISTINCT id) FROM team_members) - booked_count < $required_animators
-        OR
-        -- Проверяем количество свободных аниматоров, которые могут вести эту программу
-        (SELECT COUNT(DISTINCT team_member_id) FROM animator_programs WHERE program_id = $program_id) - program_booked_count < $required_animators
-    )
-";
-            $result = mysqli_query($link, $query);
-
-            while ($row = mysqli_fetch_assoc($result)) {
-                $response['unavailable_dates'][] = $row['event_date'];
-            }
+            $from = (new DateTime('tomorrow'))->format('Y-m-d');
+            $to = (new DateTime('+1 year'))->format('Y-m-d');
+            $response['unavailable_dates'] = staff_schedule_unavailable_dates_for_program(
+                $link,
+                $program_id,
+                $required_animators,
+                $from,
+                $to
+            );
         }
     }
 }
