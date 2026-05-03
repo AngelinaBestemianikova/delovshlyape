@@ -194,18 +194,26 @@ unset($_SESSION['booking_success']);
                     <?php if (empty($active_bookings)): ?>
                         <p class="no-bookings">У вас нет предстоящих бронирований</p>
                     <?php else: ?>
-                        <div class="bookings-slider-wrapper">
-                            <?php foreach ($active_bookings as $booking): ?>
-                                <div class="booking-card-item">
-                                    <?php
-                                    // Форматируем дату перед выводом
-                                    $date_obj = new DateTime($booking['event_date']);
-                                    $formatted_date = $date_obj->format('d.m.Y');
+                        <div class="bookings-slider-shell" data-booking-count="<?= (int) count($active_bookings) ?>">
+                            <button type="button" class="bookings-slider-nav bookings-slider-nav--prev"
+                                aria-label="Предыдущие бронирования"><span class="bookings-slider-nav-glyph"
+                                    aria-hidden="true">‹</span></button>
+                            <div class="bookings-slider-wrapper">
+                                <?php foreach ($active_bookings as $booking): ?>
+                                    <div class="booking-card-item">
+                                        <?php
+                                        // Форматируем дату перед выводом
+                                        $date_obj = new DateTime($booking['event_date']);
+                                        $formatted_date = $date_obj->format('d.m.Y');
 
-                                    include 'includes/booking_card.php';
-                                    ?>
-                                </div>
-                            <?php endforeach; ?>
+                                        include 'includes/booking_card.php';
+                                        ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button type="button" class="bookings-slider-nav bookings-slider-nav--next"
+                                aria-label="Следующие бронирования"><span class="bookings-slider-nav-glyph"
+                                    aria-hidden="true">›</span></button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -214,18 +222,26 @@ unset($_SESSION['booking_success']);
                     <?php if (empty($past_bookings)): ?>
                         <p class="no-bookings">История бронирований пуста</p>
                     <?php else: ?>
-                        <div class="bookings-slider-wrapper">
-                            <?php foreach ($past_bookings as $booking): ?>
-                                <div class="booking-card-item">
-                                    <?php
-                                    // Форматируем дату перед выводом
-                                    $date_obj = new DateTime($booking['event_date']);
-                                    $formatted_date = $date_obj->format('d.m.Y');
+                        <div class="bookings-slider-shell" data-booking-count="<?= (int) count($past_bookings) ?>">
+                            <button type="button" class="bookings-slider-nav bookings-slider-nav--prev"
+                                aria-label="Предыдущие бронирования"><span class="bookings-slider-nav-glyph"
+                                    aria-hidden="true">‹</span></button>
+                            <div class="bookings-slider-wrapper">
+                                <?php foreach ($past_bookings as $booking): ?>
+                                    <div class="booking-card-item">
+                                        <?php
+                                        // Форматируем дату перед выводом
+                                        $date_obj = new DateTime($booking['event_date']);
+                                        $formatted_date = $date_obj->format('d.m.Y');
 
-                                    include 'includes/booking_card.php';
-                                    ?>
-                                </div>
-                            <?php endforeach; ?>
+                                        include 'includes/booking_card.php';
+                                        ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <button type="button" class="bookings-slider-nav bookings-slider-nav--next"
+                                aria-label="Следующие бронирования"><span class="bookings-slider-nav-glyph"
+                                    aria-hidden="true">›</span></button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -394,6 +410,10 @@ unset($_SESSION['booking_success']);
                     b.classList.remove("active");
                 });
                 btn.classList.add("active");
+
+                if (typeof window.refreshBookingsSliderNav === "function") {
+                    window.refreshBookingsSliderNav();
+                }
             });
         });
     </script>
@@ -534,6 +554,91 @@ unset($_SESSION['booking_success']);
         }
 
         document.addEventListener('DOMContentLoaded', renderUserSlider);
+    </script>
+
+    <script>
+        (function () {
+            const BP_SMALL = "(max-width: 768px)";
+            const GAP_PX = 24;
+
+            function shouldShowNav(count) {
+                if (count <= 1) return false;
+                const small = window.matchMedia(BP_SMALL).matches;
+                return small ? count > 1 : count > 3;
+            }
+
+            function stepForTrack(track) {
+                const card = track.querySelector(".booking-card-item");
+                if (card) return card.offsetWidth + GAP_PX;
+                return Math.max(320, track.clientWidth * 0.85);
+            }
+
+            function updateNavState(shell) {
+                const track = shell.querySelector(".bookings-slider-wrapper");
+                const prev = shell.querySelector(".bookings-slider-nav--prev");
+                const next = shell.querySelector(".bookings-slider-nav--next");
+                if (!track || !prev || !next) return;
+                const maxScroll = track.scrollWidth - track.clientWidth;
+                const eps = 3;
+                prev.disabled = maxScroll <= eps || track.scrollLeft <= eps;
+                next.disabled = maxScroll <= eps || track.scrollLeft >= maxScroll - eps;
+            }
+
+            function bindShell(shell) {
+                const track = shell.querySelector(".bookings-slider-wrapper");
+                const prev = shell.querySelector(".bookings-slider-nav--prev");
+                const next = shell.querySelector(".bookings-slider-nav--next");
+                if (!track || !prev || !next) return;
+
+                const onScroll = () => updateNavState(shell);
+                track.addEventListener("scroll", onScroll, { passive: true });
+
+                prev.addEventListener("click", () => {
+                    track.scrollBy({ left: -stepForTrack(track), behavior: "smooth" });
+                });
+                next.addEventListener("click", () => {
+                    track.scrollBy({ left: stepForTrack(track), behavior: "smooth" });
+                });
+            }
+
+            function applyVisibility() {
+                document.querySelectorAll(".bookings-slider-shell").forEach((shell) => {
+                    const count = parseInt(shell.dataset.bookingCount || "0", 10) || 0;
+                    const visible = shouldShowNav(count);
+                    shell.classList.toggle("bookings-slider-shell--nav-visible", visible);
+                    if (visible) {
+                        requestAnimationFrame(() => updateNavState(shell));
+                    }
+                });
+            }
+
+            let bound = false;
+            function initBookingsSliders() {
+                if (!bound) {
+                    document.querySelectorAll(".bookings-slider-shell").forEach(bindShell);
+                    bound = true;
+                }
+                applyVisibility();
+                document.querySelectorAll(".bookings-slider-shell.bookings-slider-shell--nav-visible").forEach((shell) => {
+                    updateNavState(shell);
+                });
+            }
+
+            window.refreshBookingsSliderNav = initBookingsSliders;
+
+            document.addEventListener("DOMContentLoaded", initBookingsSliders);
+            window.addEventListener("resize", () => {
+                clearTimeout(window._bookingsSliderResizeT);
+                window._bookingsSliderResizeT = setTimeout(initBookingsSliders, 100);
+            });
+
+            const mq = window.matchMedia(BP_SMALL);
+            if (mq.addEventListener) {
+                mq.addEventListener("change", initBookingsSliders);
+            } else if (mq.addListener) {
+                mq.addListener(initBookingsSliders);
+            }
+        })();
     </script>
 </body>
 

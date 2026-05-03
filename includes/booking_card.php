@@ -4,7 +4,12 @@ $is_canceled = ($booking['status'] === 'canceled');
 <div class="booking-card <?php echo $is_canceled ? 'booking-card-canceled' : ''; ?>">
     <div class="booking-header">
         <h4><?php echo htmlspecialchars($booking['program_name']); ?></h4>
-        <span class="booking-date"><?php echo $formatted_date; ?></span>
+        <span class="booking-date"><?php
+                            echo $formatted_date;
+                            if (!empty($booking['event_start_time'])) {
+                                echo ', ' . date('H:i', strtotime((string) $booking['event_start_time']));
+                            }
+                            ?></span>
     </div>
 
     <div class="booking-details">

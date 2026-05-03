@@ -33,8 +33,8 @@ if (isset($_SESSION['client_id'])) {
     $user_data = mysqli_fetch_assoc($result);
 }
 
-// Get only active programs for the dropdown
-$programs_query = "SELECT id, name, max_children FROM programs WHERE is_archived = 0 ORDER BY name";
+// Get only active programs for the dropdown (duration — допустимые слоты времени на форме)
+$programs_query = "SELECT id, name, max_children, COALESCE(duration, 0) AS duration FROM programs WHERE is_archived = 0 ORDER BY name";
 $programs_result = mysqli_query($link, $programs_query);
 ?>
 <!DOCTYPE html>
@@ -111,6 +111,11 @@ $programs_result = mysqli_query($link, $programs_query);
                         <?php echo $_SESSION['booking_errors']['database']; ?>
                     </div>
                 <?php endif; ?>
+                <?php if (isset($_SESSION['booking_errors']['animators'])): ?>
+                    <div style="color: #c62828; background: #ffebee; padding: 10px; margin-bottom: 16px; border-radius: 5px;">
+                        <?php echo htmlspecialchars($_SESSION['booking_errors']['animators']); ?>
+                    </div>
+                <?php endif; ?>
                 <form id="bookingForm" class="booking-form" action="process_booking.php" method="POST">
                     <div class="form-row">
                         <input type="text" name="name" placeholder="Имя*"
@@ -137,6 +142,7 @@ $programs_result = mysqli_query($link, $programs_query);
                                 <?php while ($program_row = mysqli_fetch_assoc($programs_result)): ?>
                                     <option value="<?php echo htmlspecialchars($program_row['name']); ?>"
                                         data-max-children="<?php echo (int) $program_row['max_children']; ?>"
+                                        data-duration="<?php echo (int) $program_row['duration']; ?>"
                                         <?php echo ($program == $program_row['name']) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($program_row['name']); ?>
                                     </option>
@@ -183,22 +189,35 @@ $programs_result = mysqli_query($link, $programs_query);
                     </div>
 
                     <div class="form-row form-row-special">
-                        <div class="field-group">
+                        <div class="field-group booking-location-field booking-dependent-field<?php echo ($program !== '') ? '' : ' booking-location--locked'; ?>"
+                            id="booking-location-field">
+                            <div class="booking-dependent-mask" role="presentation" aria-hidden="true"></div>
                             <input type="text" name="location" id="suggest" placeholder="Введите адрес..." required
-                                value="<?php echo isset($booking_form_data['location']) ? htmlspecialchars($booking_form_data['location']) : ''; ?>">
+                                value="<?php echo (($program !== '') && isset($booking_form_data['location'])) ? htmlspecialchars($booking_form_data['location']) : ''; ?>">
                             <div id="map"></div>
                         </div>
                     </div>
 
-                    <div class="form-row form-row-special">
-                        <div class="field-group">
-                            <input type="date" id="event_date" name="event_date"
-                                placeholder="Планируемая дата праздника" required
-                                min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
+                    <div id="booking-datetime-row"
+                        class="form-row form-row-datetime<?php echo ($program !== '') ? '' : ' booking-datetime--locked'; ?>">
+                        <div class="field-group field-group-date booking-datetime-field">
+                            <div class="booking-dependent-mask" role="presentation" aria-hidden="true"></div>
+                            <input type="text" id="event_date" name="event_date" inputmode="none" autocomplete="off"
+                                placeholder="Дата мероприятия*" required
                                 value="<?php echo isset($booking_form_data['event_date']) ? htmlspecialchars($booking_form_data['event_date']) : ''; ?>">
                             <?php if (isset($_SESSION['booking_errors']['event_date'])): ?>
                                 <span
                                     class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['event_date']); ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="field-group field-group-time booking-datetime-field">
+                            <div class="booking-dependent-mask" role="presentation" aria-hidden="true"></div>
+                            <select name="event_start_time" id="event_start_time" required>
+                                <option value="">Время мероприятия*</option>
+                            </select>
+                            <?php if (isset($_SESSION['booking_errors']['event_start_time'])): ?>
+                                <span
+                                    class="field-error"><?php echo htmlspecialchars($_SESSION['booking_errors']['event_start_time']); ?></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -212,6 +231,9 @@ $programs_result = mysqli_query($link, $programs_query);
                     </div>
                 </form>
                 <?php
+                $booking_preserve_event_start_time = isset($booking_form_data['event_start_time'])
+                    ? trim((string) $booking_form_data['event_start_time'])
+                    : '';
                 unset($_SESSION['booking_errors'], $_SESSION['booking_form_data']);
                 ?>
             </div>
@@ -223,11 +245,165 @@ $programs_result = mysqli_query($link, $programs_query);
     <!-- JS-логика -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            const preservedEventStartTime = <?php echo json_encode($booking_preserve_event_start_time, JSON_UNESCAPED_UNICODE); ?>;
             const programSelect = document.getElementById("program-select");
             const dateInput = document.getElementById("event_date");
             const guestsInput = document.getElementById("guests-input");
+            const timeSelect = document.getElementById("event_start_time");
+            const datetimeRow = document.getElementById("booking-datetime-row");
+            const locationField = document.getElementById("booking-location-field");
+            const bookingFormEl = document.getElementById("bookingForm");
+
+            const MSG_NEED_PROGRAM_FIRST = "Сначала выберите программу";
 
             let fpInstance = null;
+            let slotRequestCounter = 0;
+
+            /** Построить select времени из ответа сервера или заглушек (без программы / без даты / нет слотов). */
+            function renderTimeSelectFromServer(availableSlots, keepValue) {
+                const slots = Array.isArray(availableSlots) ? availableSlots : [];
+                const prevValue = typeof keepValue === "string" ? keepValue : "";
+                const hasProg = !!programSelect.value;
+                const dateOk = /^(\d{4})-(\d{2})-(\d{2})$/.test((dateInput.value || "").trim());
+
+                timeSelect.innerHTML = "";
+
+                const ph = document.createElement("option");
+                ph.value = "";
+                if (!hasProg) {
+                    ph.textContent = "Время мероприятия*";
+                } else if (!dateOk) {
+                    ph.textContent = "Сначала укажите дату*";
+                } else if (slots.length === 0) {
+                    ph.textContent = "Нет свободных слотов";
+                } else {
+                    ph.textContent = "Время*";
+                }
+                timeSelect.appendChild(ph);
+
+                const showSlots = hasProg && dateOk && slots.length > 0;
+                if (showSlots) {
+                    slots.forEach(function (label) {
+                        const opt = document.createElement("option");
+                        opt.value = label;
+                        opt.textContent = label;
+                        timeSelect.appendChild(opt);
+                    });
+                }
+
+                if (prevValue && Array.from(timeSelect.options).some((o) => o.value === prevValue)) {
+                    timeSelect.value = prevValue;
+                }
+                syncTimeSelectUnpickedClass();
+            }
+
+            function requestAvailableTimeSlots(keepValue) {
+                if (datetimeRow && datetimeRow.classList.contains("booking-datetime--locked")) {
+                    renderTimeSelectFromServer([], "");
+                    return;
+                }
+
+                const hasProg = !!programSelect.value;
+                const dateStr = (dateInput.value || "").trim();
+                const dateOk = /^(\d{4})-(\d{2})-(\d{2})$/.test(dateStr);
+
+                if (!hasProg || !dateOk) {
+                    renderTimeSelectFromServer([], keepValue);
+                    return;
+                }
+
+                slotRequestCounter += 1;
+                const rid = slotRequestCounter;
+                const formData = new FormData();
+                formData.append("program", programSelect.value);
+                formData.append("event_date", dateStr);
+                formData.append("get_available_time_slots", "1");
+
+                fetch("booking-handler.php", {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then(function (res) {
+                        return res.json();
+                    })
+                    .then(function (data) {
+                        if (rid !== slotRequestCounter) return;
+                        renderTimeSelectFromServer(data.available_time_slots || [], keepValue);
+                    })
+                    .catch(function () {
+                        if (rid !== slotRequestCounter) return;
+                        renderTimeSelectFromServer([], keepValue);
+                    });
+            }
+
+            function syncTimeSelectUnpickedClass() {
+                if (!timeSelect) return;
+                timeSelect.classList.toggle("booking-time-unpicked", timeSelect.value === "");
+            }
+
+            function setDatetimeFieldsLocked(locked) {
+                if (!datetimeRow) return;
+                datetimeRow.classList.toggle("booking-datetime--locked", locked);
+                [dateInput, timeSelect].forEach(function (el) {
+                    if (!el) return;
+                    if (locked) {
+                        el.setAttribute("tabindex", "-1");
+                    } else {
+                        el.removeAttribute("tabindex");
+                    }
+                });
+                if (locked && fpInstance) {
+                    fpInstance.destroy();
+                    fpInstance = null;
+                }
+            }
+
+            if (bookingFormEl) {
+                bookingFormEl.addEventListener(
+                    "click",
+                    function (e) {
+                        const mask = e.target.closest(".booking-dependent-mask");
+                        if (!mask) return;
+                        const dtRow = mask.closest("#booking-datetime-row");
+                        const datetimeLocked = dtRow && dtRow.classList.contains("booking-datetime--locked");
+                        const locGroup = mask.closest("#booking-location-field");
+                        const locLocked = locGroup && locGroup.classList.contains("booking-location--locked");
+                        if (datetimeLocked || locLocked) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert(MSG_NEED_PROGRAM_FIRST);
+                        }
+                    },
+                    true
+                );
+                bookingFormEl.querySelectorAll(".booking-dependent-mask").forEach(function (mask) {
+                    mask.addEventListener("mousedown", function (e) {
+                        const dtRow = mask.closest("#booking-datetime-row");
+                        const datetimeLocked = dtRow && dtRow.classList.contains("booking-datetime--locked");
+                        const locGroup = mask.closest("#booking-location-field");
+                        const locLocked = locGroup && locGroup.classList.contains("booking-location--locked");
+                        if (datetimeLocked || locLocked) {
+                            e.preventDefault();
+                        }
+                    });
+                });
+            }
+
+            function setLocationFieldsLocked(locked) {
+                if (!locationField) return;
+                locationField.classList.toggle("booking-location--locked", locked);
+                const sug = document.getElementById("suggest");
+                if (!sug) return;
+                if (locked) {
+                    sug.value = "";
+                    sug.setAttribute("tabindex", "-1");
+                    window.bookingAddressValid = false;
+                } else {
+                    sug.removeAttribute("tabindex");
+                }
+            }
+
+            timeSelect.addEventListener("change", syncTimeSelectUnpickedClass);
 
             /** Минимальная дата мероприятия — завтра (как на сервере и в атрибуте min у input). */
             function getTomorrowDate() {
@@ -264,7 +440,8 @@ $programs_result = mysqli_query($link, $programs_query);
                 }
             }
 
-            function updateCalendar(programName) {
+            function updateCalendar(programName, keepPresetTimeValue) {
+                const keepSlot = typeof keepPresetTimeValue === "string" ? keepPresetTimeValue : "";
                 const formData = new FormData();
                 formData.append("program", programName);
                 formData.append("get_unavailable_dates", "1"); // просто маркер, чтобы отличать
@@ -280,7 +457,10 @@ $programs_result = mysqli_query($link, $programs_query);
                             guestsInput.setAttribute("title", "Максимум для выбранной программы: " + data.max_children);
                             clampGuestsToMax(data.max_children);
                         }
-                        if (data.unavailable_dates) {
+                        const lockedNow = datetimeRow && datetimeRow.classList.contains("booking-datetime--locked");
+                        if (lockedNow) {
+                            renderTimeSelectFromServer([], "");
+                        } else if (data.unavailable_dates) {
                             if (fpInstance) {
                                 fpInstance.destroy(); // переинициализация
                             }
@@ -289,7 +469,26 @@ $programs_result = mysqli_query($link, $programs_query);
                             const fpOpts = {
                                 minDate: minEventDate,
                                 dateFormat: "Y-m-d",
-                                disable: data.unavailable_dates || []
+                                disable: data.unavailable_dates || [],
+                                onChange: function (_selDates, _dateStr) {
+                                    requestAvailableTimeSlots("");
+                                },
+                                onReady: function (selectedDates, _dateStr, instance) {
+                                    let ds = (dateInput.value || "").trim();
+                                    if (
+                                        selectedDates &&
+                                        selectedDates.length > 0 &&
+                                        instance &&
+                                        typeof instance.formatDate === "function"
+                                    ) {
+                                        ds = instance.formatDate(selectedDates[0], "Y-m-d");
+                                    }
+                                    if (ds && /^(\d{4})-(\d{2})-(\d{2})$/.test(ds)) {
+                                        requestAvailableTimeSlots(keepSlot);
+                                    } else {
+                                        renderTimeSelectFromServer([], keepSlot);
+                                    }
+                                },
                             };
                             if (dateInput.value) {
                                 const parsed = parseYmdLocal(dateInput.value);
@@ -298,27 +497,48 @@ $programs_result = mysqli_query($link, $programs_query);
                                 }
                             }
                             fpInstance = flatpickr(dateInput, fpOpts);
+                        } else {
+                            renderTimeSelectFromServer([], keepSlot);
                         }
+                    })
+                    .catch(function () {
+                        renderTimeSelectFromServer([], keepSlot);
                     });
             }
 
             programSelect.addEventListener("change", () => {
                 syncGuestsMaxFromProgram();
                 const selectedProgram = programSelect.value;
-                if (selectedProgram) {
-                    updateCalendar(selectedProgram);
+                if (!selectedProgram) {
+                    setDatetimeFieldsLocked(true);
+                    setLocationFieldsLocked(true);
+                    dateInput.value = "";
+                    renderTimeSelectFromServer([], "");
+                    return;
                 }
+                setDatetimeFieldsLocked(false);
+                setLocationFieldsLocked(false);
+                renderTimeSelectFromServer([], "");
+                updateCalendar(selectedProgram, "");
             });
 
             syncGuestsMaxFromProgram();
             if (programSelect.value) {
-                updateCalendar(programSelect.value);
+                setDatetimeFieldsLocked(false);
+                setLocationFieldsLocked(false);
+                renderTimeSelectFromServer([], "");
+                updateCalendar(programSelect.value, preservedEventStartTime);
+            } else {
+                setDatetimeFieldsLocked(true);
+                setLocationFieldsLocked(true);
+                renderTimeSelectFromServer([], "");
+                syncTimeSelectUnpickedClass();
             }
         });
     </script>
     <script type="text/javascript">
         // 1. ПЕРЕМЕННАЯ ТЕПЕРЬ ГЛОБАЛЬНАЯ
-        var isAddressValid = false;
+        window.bookingAddressValid = false;
 
         ymaps.ready(init);
 
@@ -327,20 +547,6 @@ $programs_result = mysqli_query($link, $programs_query);
                 [53.78, 27.35], // Юго-запад
                 [54.02, 27.75]  // Северо-восток
             ];
-
-            /** Точность геокодера Яндекса: только дом (number) или дверь (exact). */
-            function getGeocoderPrecision(geoObject) {
-                try {
-                    var meta = geoObject.properties.get("metaDataProperty.GeocoderMetaData");
-                    return meta && meta.precision ? String(meta.precision).toLowerCase() : "";
-                } catch (err) {
-                    return "";
-                }
-            }
-
-            function isHouseLevelPrecision(precision) {
-                return precision === "exact" || precision === "number";
-            }
 
             var myMap = new ymaps.Map("map", {
                 center: [53.90, 27.56],
@@ -386,37 +592,31 @@ $programs_result = mysqli_query($link, $programs_query);
 
             function updateAddressByCoords(coords) {
                 if (!ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
-                    isAddressValid = false;
+                    window.bookingAddressValid = false;
                     return;
                 }
                 movePlacemark(coords);
                 ymaps.geocode(coords, { results: 1 }).then(function (res) {
                     var firstGeoObject = res.geoObjects.get(0);
                     if (!firstGeoObject) {
-                        isAddressValid = false;
+                        window.bookingAddressValid = false;
                         return;
                     }
                     var gcCoords = firstGeoObject.geometry.getCoordinates();
                     if (!ymaps.util.bounds.containsPoint(allowedBounds, gcCoords)) {
-                        isAddressValid = false;
+                        window.bookingAddressValid = false;
                         alert("Адрес находится вне зоны обслуживания.");
                         return;
                     }
-                    var precision = getGeocoderPrecision(firstGeoObject);
                     var address = firstGeoObject.getAddressLine();
                     inputField.value = address;
-                    if (!isHouseLevelPrecision(precision)) {
-                        isAddressValid = false;
-                        alert("Выберите точку ближе к дому или укажите адрес с номером дома (не только город или улицу).");
-                        return;
-                    }
-                    isAddressValid = true;
+                    window.bookingAddressValid = true;
                 });
             }
 
             function geocode(address) {
                 if (!address) {
-                    isAddressValid = false;
+                    window.bookingAddressValid = false;
                     return;
                 }
 
@@ -427,25 +627,19 @@ $programs_result = mysqli_query($link, $programs_query);
                 }).then(function (res) {
                     var obj = res.geoObjects.get(0);
                     if (!obj) {
-                        isAddressValid = false;
+                        window.bookingAddressValid = false;
                         return;
                     }
                     var coords = obj.geometry.getCoordinates();
                     if (!ymaps.util.bounds.containsPoint(allowedBounds, coords)) {
-                        isAddressValid = false;
+                        window.bookingAddressValid = false;
                         alert("Адрес находится вне зоны обслуживания.");
-                        return;
-                    }
-                    var precision = getGeocoderPrecision(obj);
-                    if (!isHouseLevelPrecision(precision)) {
-                        isAddressValid = false;
-                        alert("Укажите полный адрес с номером дома (корпус, строение — при необходимости). Недостаточно только названия города или улицы.");
                         return;
                     }
                     inputField.value = obj.getAddressLine();
                     myMap.setCenter(coords, 15);
                     movePlacemark(coords);
-                    isAddressValid = true;
+                    window.bookingAddressValid = true;
                 });
             }
 
@@ -470,14 +664,14 @@ $programs_result = mysqli_query($link, $programs_query);
             const inputField = document.getElementById('suggest');
 
             inputField.addEventListener('input', function () {
-                isAddressValid = false;
+                window.bookingAddressValid = false;
             });
 
             form.addEventListener('submit', function (e) {
                 // Теперь проверка работает корректно
-                if (!isAddressValid) {
+                if (!window.bookingAddressValid) {
                     e.preventDefault();
-                    alert("Укажите адрес с номером дома в пределах зоны на карте (Минск и окрестности) или выберите точку на карте у подъезда.");
+                    alert("Укажите адрес в пределах зоны на карте (Минск и окрестности)");
                     inputField.focus();
                 }
             });

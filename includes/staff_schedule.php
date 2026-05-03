@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/booking_event_time.php';
+
 /**
  * График работы сотрудников: окно «завтра — +12 месяцев», утверждение админом,
  * пометка рабочих/выходных дней. До утверждения в этом окне аниматоры недоступны для бронирования.
@@ -236,14 +238,174 @@ function staff_schedule_animator_day_cell_is_working(mysqli $link, int $teamMemb
 }
 
 /**
+ * Список интервалов занятости аниматора в этот день по другим броням (не $excludeBookingId).
+ *
+ * @param ?list<string> $onlyStatusesIn если задан непустой список — только брони с этими статусами; иначе все, кроме отменённых и архивных
+ * @return list<array{start:int,duration:int}>
+ */
+function staff_schedule_animator_other_booking_intervals(
+    mysqli $link,
+    int $excludeBookingId,
+    int $teamMemberId,
+    string $dateYmd,
+    ?array $onlyStatusesIn = null
+): array {
+    $knownStatuses = ['pending', 'confirmed', 'canceled', 'archived'];
+
+    $sqlTail = '';
+    $types = '';
+    $bindVals = [];
+
+    if ($onlyStatusesIn !== null) {
+        $onlyStatusesIn = array_values(array_unique(array_filter(
+            $onlyStatusesIn,
+            static function ($s) use ($knownStatuses) {
+                return is_string($s) && $s !== '' && in_array($s, $knownStatuses, true);
+            }
+        )));
+        if ($onlyStatusesIn === []) {
+            return [];
+        }
+        $sqlTail = 'b.status IN (' . implode(',', array_fill(0, count($onlyStatusesIn), '?')) . ')';
+        $types = 'isi' . str_repeat('s', count($onlyStatusesIn));
+        $bindVals = array_merge([$teamMemberId, $dateYmd, $excludeBookingId], $onlyStatusesIn);
+    } else {
+        $sqlTail = "b.status NOT IN ('canceled', 'archived')";
+        $types = 'isi';
+        $bindVals = [$teamMemberId, $dateYmd, $excludeBookingId];
+    }
+
+    $stmt = $link->prepare('
+        SELECT b.event_start_time, COALESCE(p.duration, 0) AS duration
+        FROM booked_animators ba
+        INNER JOIN bookings b ON b.id = ba.booking_id
+        INNER JOIN programs p ON p.id = b.program_id
+        WHERE ba.team_member_id = ?
+          AND DATE(b.event_date) = ?
+          AND b.id != ?
+          AND ' . $sqlTail . '
+    ');
+    if (!$stmt) {
+        return [];
+    }
+    $stmt->bind_param($types, ...$bindVals);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $intervals = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $timeRaw = $row['event_start_time'] ?? null;
+            if ($timeRaw === null || trim((string) $timeRaw) === '') {
+                $intervals[] = booking_event_legacy_full_day_interval();
+                continue;
+            }
+            $dur = (int) ($row['duration'] ?? 0);
+            if ($dur < 1) {
+                continue;
+            }
+            $iv = booking_event_interval_minutes((string) $timeRaw, $dur);
+            if ($iv === null) {
+                continue;
+            }
+            $intervals[] = $iv;
+        }
+    }
+    $stmt->close();
+
+    return $intervals;
+}
+
+/**
+ * Пересекается ли запрошенный слот с занятостью аниматора в этот день (другие брони).
+ */
+function staff_schedule_animator_slot_conflicts_with_bookings(
+    mysqli $link,
+    int $excludeBookingId,
+    int $teamMemberId,
+    string $dateYmd,
+    int $slotStartMin,
+    int $slotDurationMin,
+    ?array $onlyOtherBookingStatusesIn = null
+): bool {
+    foreach (staff_schedule_animator_other_booking_intervals(
+        $link,
+        $excludeBookingId,
+        $teamMemberId,
+        $dateYmd,
+        $onlyOtherBookingStatusesIn
+    ) as $iv) {
+        if (booking_event_intervals_too_close_or_overlap($slotStartMin, $slotDurationMin, $iv['start'], $iv['duration'])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Есть ли у аниматора конфликт по времени с другой подтверждённой бронью в этот день (паузы и пересечения как при бронировании).
+ */
+function staff_schedule_animator_conflicts_other_confirmed_for_booking(
+    mysqli $link,
+    int $bookingId,
+    int $teamMemberId,
+    string $dateYmd,
+    ?string $eventStartTime,
+    int $programDurationMinutes
+): bool {
+    if ($programDurationMinutes < 1) {
+        return false;
+    }
+
+    $slot = booking_event_interval_minutes($eventStartTime, $programDurationMinutes);
+    if ($slot === null) {
+        $legacy = booking_event_legacy_full_day_interval();
+
+        return staff_schedule_animator_slot_conflicts_with_bookings(
+            $link,
+            $bookingId,
+            $teamMemberId,
+            $dateYmd,
+            $legacy['start'],
+            $legacy['duration'],
+            ['confirmed']
+        );
+    }
+
+    return staff_schedule_animator_slot_conflicts_with_bookings(
+        $link,
+        $bookingId,
+        $teamMemberId,
+        $dateYmd,
+        $slot['start'],
+        $slot['duration'],
+        ['confirmed']
+    );
+}
+
+/**
  * Есть ли у сотрудника другая (не эта) бронь на ту же календарную дату (не отменена / не в архиве).
+ * При заданных $slotStartMin и $slotDurationMin учитывается пересечение по времени; иначе — любая бронь в этот день.
  */
 function staff_schedule_animator_has_other_booking_same_day(
     mysqli $link,
     int $excludeBookingId,
     int $teamMemberId,
-    string $dateYmd
+    string $dateYmd,
+    ?int $slotStartMin = null,
+    ?int $slotDurationMin = null
 ): bool {
+    if ($slotStartMin !== null && $slotDurationMin !== null && $slotDurationMin > 0) {
+        return staff_schedule_animator_slot_conflicts_with_bookings(
+            $link,
+            $excludeBookingId,
+            $teamMemberId,
+            $dateYmd,
+            $slotStartMin,
+            $slotDurationMin
+        );
+    }
+
     $stmt = $link->prepare('
         SELECT 1
         FROM booked_animators ba
@@ -275,7 +437,13 @@ function staff_schedule_validate_booking_can_confirm(mysqli $link, int $bookingI
 {
     staff_schedule_sync_period_and_defaults($link);
 
-    $stmt = $link->prepare('SELECT id, program_id, event_date FROM bookings WHERE id = ? LIMIT 1');
+    $stmt = $link->prepare('
+        SELECT b.id, b.program_id, b.event_date, b.event_start_time, COALESCE(p.duration, 0) AS duration
+        FROM bookings b
+        INNER JOIN programs p ON p.id = b.program_id
+        WHERE b.id = ?
+        LIMIT 1
+    ');
     if (!$stmt) {
         return 'Внутренняя ошибка при проверке брони.';
     }
@@ -290,6 +458,9 @@ function staff_schedule_validate_booking_can_confirm(mysqli $link, int $bookingI
 
     $dateYmd = staff_schedule_booking_event_date_ymd((string) $booking['event_date']);
     $programId = (int) $booking['program_id'];
+    $slotIv = booking_event_interval_minutes($booking['event_start_time'] ?? null, (int) $booking['duration']);
+    $slotStartMin = $slotIv['start'] ?? null;
+    $slotDurMin = $slotIv['duration'] ?? null;
 
     $ba = $link->prepare('SELECT team_member_id FROM booked_animators WHERE booking_id = ? ORDER BY team_member_id ASC');
     if (!$ba) {
@@ -318,8 +489,8 @@ function staff_schedule_validate_booking_can_confirm(mysqli $link, int $bookingI
         if (!staff_schedule_animator_day_cell_is_working($link, $mid, $dateYmd)) {
             return 'Подтверждение невозможно: в графике на дату мероприятия у сотрудника отмечен выходной.';
         }
-        if (staff_schedule_animator_has_other_booking_same_day($link, $bookingId, $mid, $dateYmd)) {
-            return 'Подтверждение невозможно: сотрудник уже занят другой бронью на эту дату.';
+        if (staff_schedule_animator_has_other_booking_same_day($link, $bookingId, $mid, $dateYmd, $slotStartMin, $slotDurMin)) {
+            return 'Подтверждение невозможно: сотрудник уже занят другой бронью на это время.';
         }
     }
 
@@ -337,7 +508,9 @@ function staff_schedule_available_animators_for_booking_edit(
     int $programId,
     string $eventDateYmd,
     int $excludeBookingId,
-    ?array $meta = null
+    ?array $meta = null,
+    ?int $slotStartMin = null,
+    ?int $slotDurationMin = null
 ): array {
     staff_schedule_sync_period_and_defaults($link);
     if ($meta === null) {
@@ -350,26 +523,34 @@ function staff_schedule_available_animators_for_booking_edit(
         return [];
     }
 
-    $stmt = $link->prepare('
-        SELECT DISTINCT ba.team_member_id
-        FROM booked_animators ba
-        INNER JOIN bookings b ON b.id = ba.booking_id
-        WHERE DATE(b.event_date) = ?
-          AND b.status != \'canceled\'
-          AND b.id != ?
-    ');
-    $stmt->bind_param('si', $eventDateYmd, $excludeBookingId);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $useTime = $slotStartMin !== null && $slotDurationMin !== null && $slotDurationMin > 0;
+
     $booked = [];
-    while ($row = $res->fetch_assoc()) {
-        $booked[] = (int) $row['team_member_id'];
+    if (!$useTime) {
+        $stmt = $link->prepare('
+            SELECT DISTINCT ba.team_member_id
+            FROM booked_animators ba
+            INNER JOIN bookings b ON b.id = ba.booking_id
+            WHERE DATE(b.event_date) = ?
+              AND b.status != \'canceled\'
+              AND b.id != ?
+        ');
+        $stmt->bind_param('si', $eventDateYmd, $excludeBookingId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $booked[] = (int) $row['team_member_id'];
+        }
+        $stmt->close();
     }
-    $stmt->close();
 
     $pool = [];
     foreach ($capable as $mid) {
-        if (in_array($mid, $booked, true)) {
+        if (!$useTime) {
+            if (in_array($mid, $booked, true)) {
+                continue;
+            }
+        } elseif (staff_schedule_animator_slot_conflicts_with_bookings($link, $excludeBookingId, $mid, $eventDateYmd, $slotStartMin, $slotDurationMin)) {
             continue;
         }
         if (!staff_schedule_animator_available_per_graph($link, $mid, $eventDateYmd, $meta)) {
@@ -413,24 +594,30 @@ function staff_schedule_capable_member_ids(mysqli $link, int $programId): array
 }
 
 /**
- * Карта дата => список занятых на мероприятиях team_member_id (не отменённые брони).
+ * Карта «дата → id аниматоров», занятых на весь день по модели без времени
+ * (`event_start_time IS NULL`): такие брони трактуются как одна непрерывная занятость окна.
+ * У брони с указанным временем сотрудник не попадает сюда и может выступать в другом слоте того же дня.
  */
-function staff_schedule_booked_animators_by_date(mysqli $link, string $dateFrom, string $dateTo): array
+function staff_schedule_legacy_whole_day_booked_animators_map(mysqli $link, string $dateFrom, string $dateTo): array
 {
     $map = [];
-    $stmt = $link->prepare("
-        SELECT b.event_date, ba.team_member_id
+    $stmt = $link->prepare('
+        SELECT DISTINCT DATE(b.event_date) AS d, ba.team_member_id
         FROM bookings b
         INNER JOIN booked_animators ba ON ba.booking_id = b.id
-        WHERE b.status != 'canceled'
-          AND b.event_date >= ?
-          AND b.event_date <= ?
-    ");
+        WHERE b.status NOT IN (\'canceled\', \'archived\')
+          AND b.event_start_time IS NULL
+          AND DATE(b.event_date) >= ?
+          AND DATE(b.event_date) <= ?
+    ');
+    if (!$stmt) {
+        return [];
+    }
     $stmt->bind_param('ss', $dateFrom, $dateTo);
     $stmt->execute();
     $res = $stmt->get_result();
     while ($row = $res->fetch_assoc()) {
-        $d = $row['event_date'];
+        $d = staff_schedule_booking_event_date_ymd((string) $row['d']);
         $id = (int) $row['team_member_id'];
         if (!isset($map[$d])) {
             $map[$d] = [];
@@ -441,6 +628,7 @@ function staff_schedule_booked_animators_by_date(mysqli $link, string $dateFrom,
     foreach ($map as $d => $_) {
         $map[$d] = array_keys($map[$d]);
     }
+
     return $map;
 }
 
@@ -495,7 +683,9 @@ function staff_schedule_get_free_animator_ids(
     ?array $workingByDate = null,
     ?string $winStart = null,
     ?string $winEnd = null,
-    ?bool $approved = null
+    ?bool $approved = null,
+    ?string $eventStartTimeHms = null,
+    ?int $eventDurationMinutes = null
 ): array {
     if ($capableIds === null) {
         $capableIds = staff_schedule_capable_member_ids($link, $programId);
@@ -544,8 +734,25 @@ function staff_schedule_get_free_animator_ids(
         $pool = $capableIds;
     }
 
+    $useTime = $eventStartTimeHms !== null && $eventStartTimeHms !== ''
+        && $eventDurationMinutes !== null && $eventDurationMinutes > 0;
+    if ($useTime) {
+        $slotStartMin = booking_event_minutes_from_time_string($eventStartTimeHms);
+        if ($slotStartMin < 0) {
+            return [];
+        }
+        $out = [];
+        foreach ($pool as $mid) {
+            if (!staff_schedule_animator_slot_conflicts_with_bookings($link, 0, $mid, $eventDateYmd, $slotStartMin, $eventDurationMinutes)) {
+                $out[] = $mid;
+            }
+        }
+
+        return array_values($out);
+    }
+
     if ($bookedByDate === null) {
-        $bookedByDate = staff_schedule_booked_animators_by_date($link, $eventDateYmd, $eventDateYmd);
+        $bookedByDate = staff_schedule_legacy_whole_day_booked_animators_map($link, $eventDateYmd, $eventDateYmd);
     }
     $booked = $bookedByDate[$eventDateYmd] ?? [];
 
@@ -583,7 +790,7 @@ function staff_schedule_unavailable_dates_for_program(
         return $out;
     }
 
-    $bookedBy = staff_schedule_booked_animators_by_date($link, $dateFrom, $dateTo);
+    $bookedBy = staff_schedule_legacy_whole_day_booked_animators_map($link, $dateFrom, $dateTo);
     $workingBy = $approved
         ? staff_schedule_working_members_by_date($link, $capable, $winStart, $winEnd)
         : null;
@@ -611,4 +818,44 @@ function staff_schedule_unavailable_dates_for_program(
     }
 
     return $unavailable;
+}
+
+/**
+ * Времена начала HH:MM, в которые на указанную дату наберётся нужное число свободных аниматоров.
+ *
+ * @return list<string>
+ */
+function staff_schedule_available_start_time_labels_for_booking_date(
+    mysqli $link,
+    int $programId,
+    string $eventDateYmd,
+    int $durationMinutes,
+    int $requiredAnimators
+): array {
+    if ($requiredAnimators < 1 || $durationMinutes < 1) {
+        return [];
+    }
+
+    $labels = [];
+    foreach (booking_event_allowed_start_minutes($durationMinutes) as $startMin) {
+        $hms = booking_event_format_hh_mm($startMin) . ':00';
+        $free = staff_schedule_get_free_animator_ids(
+            $link,
+            $programId,
+            $eventDateYmd,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $hms,
+            $durationMinutes
+        );
+        if (count($free) >= $requiredAnimators) {
+            $labels[] = booking_event_format_hh_mm($startMin);
+        }
+    }
+
+    return $labels;
 }

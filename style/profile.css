@@ -689,7 +689,100 @@
 .bookings-section {
   max-width: 1200px; /* Фиксированная ширина контейнера как в примере */
   margin: 0 auto;
-  overflow: hidden; /* Всё, что выходит за пределы, обрезается */
+  overflow: visible; /* стрелки слайдера могут выступать к краям */
+}
+
+/* Оболочка: стрелки по краям горизонтального списка */
+.bookings-slider-shell {
+  position: relative;
+}
+
+.bookings-slider-shell .bookings-slider-nav {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  font-family: "Nunito", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: var(--primary-color);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bookings-slider-shell.bookings-slider-shell--nav-visible .bookings-slider-nav {
+  display: flex;
+}
+
+.bookings-slider-shell .bookings-slider-nav:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.bookings-slider-shell .bookings-slider-nav:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+.bookings-slider-nav-glyph {
+  display: inline-block;
+  line-height: 1;
+}
+
+.bookings-slider-shell .bookings-slider-nav .bookings-slider-nav-glyph {
+  transform: translate(0, -2px);
+}
+
+.bookings-slider-shell .bookings-slider-nav--prev {
+  left: -78px;
+}
+
+.bookings-slider-shell .bookings-slider-nav--next {
+  right: -78px;
+}
+
+.bookings-slider-shell .bookings-slider-nav:disabled {
+  opacity: 0.28;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bookings-slider-shell--nav-visible .bookings-slider-wrapper {
+  padding-left: 48px;
+  padding-right: 48px;
+}
+
+@media (max-width: 768px) {
+  .bookings-slider-shell .bookings-slider-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+
+  .bookings-slider-shell .bookings-slider-nav--prev {
+    left: -80px;
+  }
+
+  .bookings-slider-shell .bookings-slider-nav--next {
+    right: -80px;
+  }
 }
 
 /* Обертка самого ряда (слайдер) */
@@ -701,6 +794,7 @@
   justify-content: flex-start;
   gap: 24px;
   padding: 10px 0;
+  scroll-padding-inline: 48px;
 }
 
 /* Скрытие скроллбара */

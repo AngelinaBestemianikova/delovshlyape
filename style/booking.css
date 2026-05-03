@@ -78,6 +78,57 @@
   width: 202%;
 }
 
+.form-row-datetime .field-group {
+  min-width: 0;
+}
+
+.form-row-datetime select {
+  width: 100%;
+}
+
+.booking-dependent-field.booking-location-field {
+  position: relative;
+}
+
+.booking-datetime-field {
+  position: relative;
+}
+
+.booking-dependent-mask {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  border-radius: 10px;
+  cursor: not-allowed;
+}
+
+.booking-datetime--locked .booking-dependent-mask,
+.booking-location--locked .booking-dependent-mask {
+  display: block;
+}
+
+.booking-datetime--locked #event_date,
+.booking-datetime--locked select#event_start_time {
+  box-shadow: 0 2px 4px rgba(135, 115, 255, 0.2);
+}
+
+.booking-location--locked #suggest {
+  box-shadow: 0 2px 4px rgba(135, 115, 255, 0.2);
+}
+
+.booking-form select#event_start_time.booking-time-unpicked {
+  color: var(--placeholder-color);
+}
+
+.booking-form select#event_start_time option[value=""] {
+  color: var(--placeholder-color);
+}
+
+.booking-form select#event_start_time option:not([value=""]) {
+  color: #292929;
+}
+
 .form-row input,
 .form-row select,
 textarea {

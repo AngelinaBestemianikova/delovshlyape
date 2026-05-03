@@ -1,28 +1,12 @@
 <?php
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/booking_event_time.php';
 require_once 'includes/staff_schedule.php';
 
 if (!isset($_SESSION['client_id'])) {
     header('Location: login.php');
     exit();
-}
-
-function validateDate($date)
-{
-    $inputDate = new DateTime($date);
-    $inputDate->setTime(0, 0, 0);
-
-    // Завтрашний день
-    $tomorrow = new DateTime('tomorrow');
-    $tomorrow->setTime(0, 0, 0);
-
-    // Ровно через год от сегодняшнего дня
-    $maxDate = new DateTime('+1 year');
-    $maxDate->setTime(0, 0, 0);
-
-    // Проверяем, что дата входит в диапазон [завтра; через год]
-    return $inputDate >= $tomorrow && $inputDate <= $maxDate;
 }
 
 $errors = [];
@@ -33,6 +17,7 @@ $program_name = trim($_POST['program'] ?? '');
 $child_name = trim($_POST['celebrant'] ?? '');
 $child_age = intval($_POST['age'] ?? 0);
 $event_date = trim($_POST['event_date'] ?? '');
+$event_start_time = trim($_POST['event_start_time'] ?? '');
 $event_location = trim($_POST['location'] ?? '');
 $guest_count = intval($_POST['guests'] ?? 0);
 $wishes = trim($_POST['wishes'] ?? '');
@@ -42,8 +27,11 @@ if (empty($program_name))
     $errors['program'] = 'Выберите программу';
 if ($child_age <= 0 || $child_age > 25)
     $errors['age'] = 'Некорректный возраст';
-if (empty($event_date) || !validateDate($event_date)) {
+if (empty($event_date) || !booking_event_date_allowed_for_customer($event_date)) {
     $errors['event_date'] = 'Выберите дату со следующего дня и не позднее чем через год';
+}
+if ($event_start_time === '') {
+    $errors['event_start_time'] = 'Выберите время начала';
 }
 if ($guest_count < 1)
     $errors['guests'] = 'Укажите количество гостей';
@@ -67,7 +55,7 @@ $event_location_esc = mysqli_real_escape_string($link, $event_location);
 $wishes_esc = mysqli_real_escape_string($link, $wishes);
 
 // 4. Поиск программы
-$program_sql = "SELECT id, animator_count, max_children FROM programs WHERE name = '$program_name_esc'";
+$program_sql = "SELECT id, animator_count, max_children, COALESCE(duration, 0) AS duration FROM programs WHERE name = '$program_name_esc' AND is_archived = 0 LIMIT 1";
 $program_result = mysqli_query($link, $program_sql);
 
 if (mysqli_num_rows($program_result) === 0) {
@@ -80,6 +68,33 @@ $program = mysqli_fetch_assoc($program_result);
 $program_id = intval($program['id']);
 $animator_count = intval($program['animator_count']);
 $max_children = intval($program['max_children']);
+$program_duration = (int) $program['duration'];
+
+if ($program_duration < 1) {
+    $_SESSION['booking_errors'] = ['program' => 'Для программы не задана длительность. Обратитесь к администратору.'];
+    $_SESSION['booking_form_data'] = $_POST;
+    header('Location: booking.php');
+    exit();
+}
+
+$allowed_starts = staff_schedule_available_start_time_labels_for_booking_date(
+    $link,
+    $program_id,
+    $event_date_esc,
+    $program_duration,
+    $animator_count
+);
+if (!in_array($event_start_time, $allowed_starts, true)) {
+    $_SESSION['booking_errors'] = ['event_start_time' => empty($allowed_starts)
+        ? 'На эту дату нет свободных слотов'
+        : 'Выберите доступное время'];
+    $_SESSION['booking_form_data'] = $_POST;
+    header('Location: booking.php');
+    exit();
+}
+
+$event_start_hms = $event_start_time . ':00';
+$event_start_hms_esc = mysqli_real_escape_string($link, $event_start_hms);
 
 if ($max_children < 1) {
     $_SESSION['booking_errors'] = ['program' => 'Для программы не задан лимит гостей. Обратитесь к администратору.'];
@@ -97,11 +112,23 @@ if ($guest_count > $max_children) {
     exit();
 }
 
-// 5. Поиск свободных аниматоров (график + брони)
-$free_animators = staff_schedule_get_free_animator_ids($link, $program_id, $event_date_esc);
+// 5. Поиск свободных аниматоров (график + брони, с учётом времени)
+$free_animators = staff_schedule_get_free_animator_ids(
+    $link,
+    $program_id,
+    $event_date_esc,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    $event_start_hms,
+    $program_duration
+);
 
 if (count($free_animators) < $animator_count) {
-    $_SESSION['booking_errors'] = ['animators' => 'Нет свободных аниматоров на эту дату'];
+    $_SESSION['booking_errors'] = ['animators' => 'Нет свободных аниматоров на это время'];
     header('Location: booking.php');
     exit();
 }
@@ -110,8 +137,8 @@ if (count($free_animators) < $animator_count) {
 mysqli_begin_transaction($link);
 try {
     $insert_query = "
-        INSERT INTO bookings (user_id, program_id, child_name, child_age, event_date, event_location, guest_count, wishes, status)
-        VALUES ($user_id, $program_id, '$child_name_esc', $child_age, '$event_date_esc', '$event_location_esc', $guest_count, '$wishes_esc', 'pending')";
+        INSERT INTO bookings (user_id, program_id, child_name, child_age, event_date, event_start_time, event_location, guest_count, wishes, status)
+        VALUES ($user_id, $program_id, '$child_name_esc', $child_age, '$event_date_esc', '$event_start_hms_esc', '$event_location_esc', $guest_count, '$wishes_esc', 'pending')";
 
     if (!mysqli_query($link, $insert_query)) {
         throw new Exception('Ошибка БД: ' . mysqli_error($link));

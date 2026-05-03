@@ -1,9 +1,40 @@
 <?php
 require_once 'includes/db.php';
 
-$query = "SELECT * FROM photos ORDER BY created_time DESC LIMIT 20";
-$result = mysqli_query($link, $query);
-$photos = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
+$gallery_limit = 16;
+$gallery_page = isset($_GET['gallery_page']) ? (int) $_GET['gallery_page'] : 1;
+if ($gallery_page < 1) {
+    $gallery_page = 1;
+}
+
+$gallery_total_rows = 0;
+if ($gallery_count_result = mysqli_query($link, 'SELECT COUNT(*) AS total FROM photos')) {
+    $gallery_total_rows = (int) (mysqli_fetch_assoc($gallery_count_result)['total'] ?? 0);
+}
+$gallery_total_pages = max(1, (int) ceil($gallery_total_rows / $gallery_limit));
+if ($gallery_page > $gallery_total_pages) {
+    $gallery_page = $gallery_total_pages;
+}
+$gallery_offset = ($gallery_page - 1) * $gallery_limit;
+
+$photos_result = mysqli_query(
+    $link,
+    'SELECT * FROM photos ORDER BY created_time DESC LIMIT ' . (int) $gallery_limit . ' OFFSET ' . (int) $gallery_offset
+);
+$photos = $photos_result ? mysqli_fetch_all($photos_result, MYSQLI_ASSOC) : [];
+
+function gallery_build_page_url(int $page): string
+{
+    $params = $_GET;
+    if ($page <= 1) {
+        unset($params['gallery_page']);
+    } else {
+        $params['gallery_page'] = $page;
+    }
+    $query = http_build_query($params);
+
+    return 'gallery.php' . ($query !== '' ? '?' . $query : '');
+}
 ?>
 
 <!DOCTYPE html>
@@ -45,6 +76,41 @@ $photos = $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
                 <p>В галерее пока нет фотографий.</p>
             <?php endif; ?>
         </div>
+
+        <?php if ($gallery_total_pages > 1): ?>
+            <div class="pagination-container gallery-pagination">
+                <div class="pagination-wrapper">
+                    <?php $gallery_prev_page = max(1, $gallery_page - 1); ?>
+                    <button class="pag-arrow prev" <?= ($gallery_page <= 1) ? 'disabled' : '' ?>
+                        onclick="location.href='<?= htmlspecialchars(gallery_build_page_url($gallery_prev_page)) ?>'"
+                        type="button" title="Назад">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 18L9 12L15 6"
+                                stroke="<?= ($gallery_page <= 1) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div class="pagination-dots">
+                        <?php for ($gi = 1; $gi <= $gallery_total_pages; $gi++): ?>
+                            <span class="dot <?= ($gi === $gallery_page) ? 'active' : '' ?>"
+                                style="background-color: <?= ($gi === $gallery_page) ? '#8773ff' : 'rgb(135, 115, 255, 0.2)' ?>"
+                                onclick="location.href='<?= htmlspecialchars(gallery_build_page_url($gi)) ?>'"
+                                title="Страница <?= (int) $gi ?>"></span>
+                        <?php endfor; ?>
+                    </div>
+                    <?php $gallery_next_page = min($gallery_total_pages, $gallery_page + 1); ?>
+                    <button class="pag-arrow next" <?= ($gallery_page >= $gallery_total_pages) ? 'disabled' : '' ?>
+                        onclick="location.href='<?= htmlspecialchars(gallery_build_page_url($gallery_next_page)) ?>'"
+                        type="button" title="Вперед">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 6L15 12L9 18"
+                                stroke="<?= ($gallery_page >= $gallery_total_pages) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </section>
 

@@ -88,6 +88,9 @@ function renderBookingsTable($bookings, $emptyMessage)
 
     foreach ($bookings as $b) {
         $date = date('d.m.Y', strtotime($b['event_date']));
+        if (!empty($b['event_start_time'])) {
+            $date .= ', ' . date('H:i', strtotime((string) $b['event_start_time']));
+        }
         $progName = htmlspecialchars($b['program_name']);
         $child = htmlspecialchars($b['child_name']) . " ({$b['child_age']} л.)";
 

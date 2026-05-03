@@ -17,7 +17,8 @@ if ($bookingId < 1) {
 }
 
 $bk = $link->query("
-    SELECT b.id, b.event_date, b.status, b.program_id, p.name AS program_name, p.animator_count
+    SELECT b.id, b.event_date, b.event_start_time, b.status, b.program_id, p.name AS program_name,
+           p.animator_count, COALESCE(p.duration, 0) AS program_duration
     FROM bookings b
     INNER JOIN programs p ON p.id = b.program_id
     WHERE b.id = " . (int) $bookingId . "
@@ -55,7 +56,20 @@ if ($cur) {
     }
 }
 
-$animators = staff_schedule_available_animators_for_booking_edit($link, $programId, $eventDate, $bookingId);
+$dateYmd = staff_schedule_booking_event_date_ymd((string) $row['event_date']);
+$slotIv = booking_event_interval_minutes($row['event_start_time'] ?? null, (int) $row['program_duration']);
+$slotStart = $slotIv['start'] ?? null;
+$slotDur = $slotIv['duration'] ?? null;
+
+$animators = staff_schedule_available_animators_for_booking_edit(
+    $link,
+    $programId,
+    $dateYmd,
+    $bookingId,
+    null,
+    $slotStart,
+    $slotDur
+);
 
 echo json_encode([
     'success' => true,

@@ -224,14 +224,15 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                 u.phone,
                 GROUP_CONCAT(DISTINCT tm.name ORDER BY tm.name SEPARATOR ', ') as animator_names,
                 GROUP_CONCAT(DISTINCT ba.team_member_id ORDER BY ba.team_member_id SEPARATOR ',') as animator_ids,
-                -- Проверка конфликтов: ищем другие активные брони тех же аниматоров на ту же дату
+                MIN(p.duration) AS program_duration,
+                -- Устаревающая проверка «есть ли другая подтверждённая бронь в этот календарный день» (если не хватает duration для временных интервалов)
                 (SELECT COUNT(*) 
                  FROM booked_animators ba2 
                  JOIN bookings b2 ON ba2.booking_id = b2.id 
                  WHERE ba2.team_member_id IN (SELECT team_member_id FROM booked_animators WHERE booking_id = b.id)
                  AND b2.event_date = b.event_date 
                  AND b2.id != b.id 
-                 AND b2.status = 'confirmed') as conflicts
+                 AND b2.status = 'confirmed') as conflicts_legacy_same_day
             FROM bookings b 
             JOIN programs p ON b.program_id = p.id 
             JOIN users u ON b.user_id = u.id 
@@ -239,6 +240,7 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
             LEFT JOIN team_members tm ON ba.team_member_id = tm.id
             GROUP BY b.id
             ORDER BY
+                CASE WHEN b.status = 'pending' THEN 0 ELSE 1 END ASC,
                 (b.event_date < CURDATE()) ASC,
                 CASE WHEN b.event_date >= CURDATE() THEN b.event_date END ASC,
                 CASE WHEN b.event_date < CURDATE() THEN b.event_date END DESC,
@@ -268,7 +270,29 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                                 break;
                             }
                         }
-                        $other_booking_conflict = (int) ($row['conflicts'] ?? 0) > 0;
+
+                        $program_duration = (int) ($row['program_duration'] ?? 0);
+                        $other_booking_conflict = false;
+                        if ($program_duration >= 1 && $animator_id_list !== []) {
+                            $dateYmd = staff_schedule_booking_event_date_ymd((string) $row['event_date']);
+                            $evtTime = isset($row['event_start_time']) ? trim((string) $row['event_start_time']) : '';
+                            $evtTime = $evtTime !== '' ? $evtTime : null;
+                            foreach ($animator_id_list as $animId) {
+                                if (staff_schedule_animator_conflicts_other_confirmed_for_booking(
+                                    $link,
+                                    (int) $row['id'],
+                                    $animId,
+                                    $dateYmd,
+                                    $evtTime,
+                                    $program_duration
+                                )) {
+                                    $other_booking_conflict = true;
+                                    break;
+                                }
+                            }
+                        } elseif ($animator_id_list !== []) {
+                            $other_booking_conflict = (int) ($row['conflicts_legacy_same_day'] ?? 0) > 0;
+                        }
 
                         $status_class = 'status-' . $row['status'];
                         $status_text = [
@@ -280,7 +304,7 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                         <tr>
                             <td>
                                 Заявка: <?= date('d.m.Y H:i', strtotime($row['created_at'])) ?>
-                                <b>Событие: <?= date('d.m.Y', strtotime($row['event_date'])) ?></b>
+                                <b>Событие: <?= date('d.m.Y', strtotime($row['event_date'])) ?><?= !empty($row['event_start_time']) ? ' ' . date('H:i', strtotime((string) $row['event_start_time'])) : '' ?></b>
                             </td>
                             <td>
                                 <?= htmlspecialchars($row['first_name']) ?><br>

@@ -26,6 +26,58 @@
     margin: 0 auto;
 }
 
+.gallery-pagination.pagination-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+    margin-bottom: 8px;
+}
+
+.gallery-pagination .pagination-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.gallery-pagination .pag-arrow {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.gallery-pagination .pag-arrow:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+
+.gallery-pagination .pag-arrow:disabled {
+    cursor: not-allowed;
+}
+
+.gallery-pagination .pagination-dots {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.gallery-pagination .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.gallery-pagination .dot.active {
+    transform: scale(1.2);
+}
+
 .gallery-item {
     border-radius: 20px;
     overflow: hidden;
