@@ -84,7 +84,7 @@ function openProgramModal(program = {}) {
             ${selectedAnimIds.includes(parseInt(a.id)) ? "checked" : ""} 
             style="width: auto; margin-right: 10px;">
         <label for="anim_${a.id}" style="margin: 0; cursor: pointer;">
-            ${a.name} <span style="color: gray; font-size: 11px;">(ID: ${a.id})</span>
+            ${a.name} <span style="color: gray; font-size: 11px;"></span>
         </label>
     </div>
   `,
@@ -504,6 +504,44 @@ async function openBookingAnimatorsModal(bookingId) {
     }
     location.reload();
   };
+}
+
+function decideTimeOffRequest(id, action) {
+  const verb =
+    action === "approved"
+      ? "одобрить"
+      : action === "rejected"
+        ? "отклонить"
+        : action === "pending"
+          ? "вернуть заявку в статус «На рассмотрении»"
+          : "изменить";
+  if (!confirm(`Вы уверены, что хотите ${verb}?`)) return;
+
+  fetch("adminmanage/time_off_decide.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, action }),
+  })
+    .then((res) => res.text())
+    .then((text) => {
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error(text);
+        alert("Ошибка сервера (ответ не JSON)");
+        return;
+      }
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.error || "Не удалось обработать запрос");
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Ошибка сети");
+    });
 }
 
 // --- ВКЛАДКИ (С сохранением в localStorage) ---

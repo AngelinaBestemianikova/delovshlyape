@@ -26,12 +26,16 @@ if (isset($_SESSION['client_id'])) {
                 INDEX idx_animator_user_read (animator_user_id, is_read)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+        $nk_anim = mysqli_query($link, "SHOW COLUMNS FROM animator_notifications LIKE 'notification_kind'");
+        if ($nk_anim && mysqli_num_rows($nk_anim) === 0) {
+            mysqli_query($link, "ALTER TABLE animator_notifications ADD COLUMN notification_kind VARCHAR(32) NULL DEFAULT NULL");
+        }
         $count_query = "
             SELECT COUNT(*) as total
             FROM animator_notifications
             WHERE animator_user_id = $client_id
               AND is_read = 0
-              AND event_date >= CURDATE()
+              AND (event_date IS NULL OR event_date >= CURDATE())
         ";
         $count_result = mysqli_query($link, $count_query);
         if ($count_result) {

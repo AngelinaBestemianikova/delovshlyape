@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/db.php';
 require_once 'includes/staff_schedule.php';
+require_once 'includes/time_off_requests.php';
 session_start();
 
 if (!isset($_SESSION['is_admin']) || (int) $_SESSION['is_admin'] !== 1) {
@@ -72,6 +73,11 @@ if ($pr = mysqli_query($link, "SELECT COUNT(*) AS c FROM reviews WHERE status = 
     $pending_reviews_count = (int) (mysqli_fetch_assoc($pr)['c'] ?? 0);
 }
 
+time_off_requests_ensure_schema($link);
+$pending_time_off_count = 0;
+if ($pto = mysqli_query($link, "SELECT COUNT(*) AS c FROM animator_time_off_requests WHERE status = 'pending'")) {
+    $pending_time_off_count = (int) (mysqli_fetch_assoc($pto)['c'] ?? 0);
+}
 // Пагинация для вкладки бронирований
 $bookings_limit = 15;
 $bookings_page = isset($_GET['bookings_page']) ? (int) $_GET['bookings_page'] : 1;
@@ -130,6 +136,35 @@ $programs_tab_result = mysqli_query($link, "
     LIMIT $programs_limit OFFSET $programs_offset
 ");
 $programs_tab_rows = $programs_tab_result ? mysqli_fetch_all($programs_tab_result, MYSQLI_ASSOC) : [];
+
+$timeoff_limit = 15;
+$timeoff_page = isset($_GET['timeoff_page']) ? (int) $_GET['timeoff_page'] : 1;
+if ($timeoff_page < 1) {
+    $timeoff_page = 1;
+}
+$timeoff_total_rows = 0;
+if ($timeoff_count_result = mysqli_query($link, 'SELECT COUNT(*) AS total FROM animator_time_off_requests')) {
+    $timeoff_total_rows = (int) (mysqli_fetch_assoc($timeoff_count_result)['total'] ?? 0);
+}
+$timeoff_total_pages = max(1, (int) ceil($timeoff_total_rows / $timeoff_limit));
+if ($timeoff_page > $timeoff_total_pages) {
+    $timeoff_page = $timeoff_total_pages;
+}
+$timeoff_offset = ($timeoff_page - 1) * $timeoff_limit;
+$timeoff_tab_rows = [];
+$timeoff_tab_result = mysqli_query(
+    $link,
+    "
+    SELECT r.*, u.first_name, u.last_name
+    FROM animator_time_off_requests r
+    INNER JOIN users u ON u.id = r.animator_user_id
+    ORDER BY (r.status = 'pending') DESC, r.created_at DESC
+    LIMIT $timeoff_limit OFFSET $timeoff_offset
+"
+);
+if ($timeoff_tab_result) {
+    $timeoff_tab_rows = mysqli_fetch_all($timeoff_tab_result, MYSQLI_ASSOC);
+}
 
 function admin_build_page_url(array $updates): string
 {
@@ -197,6 +232,14 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                         <?php endif; ?>
                     </span>
                 </button>
+                <button class="tab-button" data-tab="timeoff-tab">
+                    <span class="tab-button__textWrap">
+                        Отгулы аниматоров
+                        <?php if ($pending_time_off_count > 0): ?>
+                            <span class="nav-badge"><?= $pending_time_off_count ?></span>
+                        <?php endif; ?>
+                    </span>
+                </button>
                 <button class="tab-button" data-tab="schedule-tab">График сотрудников</button>
                 <button class="tab-button" data-tab="programs-tab">Программы</button>
                 <button class="tab-button" data-tab="types-tab">Типы программ</button>
@@ -224,15 +267,7 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                 u.phone,
                 GROUP_CONCAT(DISTINCT tm.name ORDER BY tm.name SEPARATOR ', ') as animator_names,
                 GROUP_CONCAT(DISTINCT ba.team_member_id ORDER BY ba.team_member_id SEPARATOR ',') as animator_ids,
-                MIN(p.duration) AS program_duration,
-                -- Устаревающая проверка «есть ли другая подтверждённая бронь в этот календарный день» (если не хватает duration для временных интервалов)
-                (SELECT COUNT(*) 
-                 FROM booked_animators ba2 
-                 JOIN bookings b2 ON ba2.booking_id = b2.id 
-                 WHERE ba2.team_member_id IN (SELECT team_member_id FROM booked_animators WHERE booking_id = b.id)
-                 AND b2.event_date = b.event_date 
-                 AND b2.id != b.id 
-                 AND b2.status = 'confirmed') as conflicts_legacy_same_day
+                MIN(p.duration) AS program_duration
             FROM bookings b 
             JOIN programs p ON b.program_id = p.id 
             JOIN users u ON b.user_id = u.id 
@@ -273,25 +308,24 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
 
                         $program_duration = (int) ($row['program_duration'] ?? 0);
                         $other_booking_conflict = false;
-                        if ($program_duration >= 1 && $animator_id_list !== []) {
+                        if ($animator_id_list !== []) {
                             $dateYmd = staff_schedule_booking_event_date_ymd((string) $row['event_date']);
-                            $evtTime = isset($row['event_start_time']) ? trim((string) $row['event_start_time']) : '';
-                            $evtTime = $evtTime !== '' ? $evtTime : null;
+                            $slotIv = booking_event_interval_minutes($row['event_start_time'] ?? null, $program_duration);
+                            $slotStart = $slotIv['start'] ?? null;
+                            $slotDur = $slotIv['duration'] ?? null;
                             foreach ($animator_id_list as $animId) {
-                                if (staff_schedule_animator_conflicts_other_confirmed_for_booking(
+                                if (staff_schedule_animator_has_other_booking_same_day(
                                     $link,
                                     (int) $row['id'],
                                     $animId,
                                     $dateYmd,
-                                    $evtTime,
-                                    $program_duration
+                                    $slotStart,
+                                    $slotDur
                                 )) {
                                     $other_booking_conflict = true;
                                     break;
                                 }
                             }
-                        } elseif ($animator_id_list !== []) {
-                            $other_booking_conflict = (int) ($row['conflicts_legacy_same_day'] ?? 0) > 0;
                         }
 
                         $status_class = 'status-' . $row['status'];
@@ -498,6 +532,118 @@ $staff_schedule_meta_row = staff_schedule_get_meta_row($link);
                             </button>
                         </div>
                     </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="tab-content staff-schedule-panel timeoff-requests-panel" id="timeoff-tab" style="display:none;">
+                <h3>Запросы на отгул</h3>
+                <?php if ($timeoff_total_rows === 0): ?>
+                    <p class="timeoff-empty">Заявок пока нет.</p>
+                <?php else: ?>
+                    <table class="admin-table">
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>День отгула</th>
+                            <th>Подано</th>
+                            <th>Бронирования</th>
+                            <th>Статус</th>
+                            <th>Обработано</th>
+                            <th>Действия</th>
+                        </tr>
+                        <?php foreach ($timeoff_tab_rows as $prow):
+                            $uid = (int) $prow['animator_user_id'];
+                            $status = $prow['status'] ?? '';
+                            $isPending = $status === 'pending';
+                            $tdates = time_off_row_effective_dates($link, $prow);
+                            $daysHuman = $tdates !== [] ? time_off_format_dates_ru($tdates) : '—';
+                            $tmInfo = time_off_resolve_animator_team_member($link, $uid);
+                            $tmId = $tmInfo['id'] ?? 0;
+                            $hasBooking = $tmId > 0 && $tdates !== []
+                                ? time_off_dates_have_confirmed_booking($link, $tmId, $tdates)
+                                : false;
+                            $name = trim(htmlspecialchars((string) ($prow['first_name'] ?? '') . ' ' . (string) ($prow['last_name'] ?? '')));
+
+                            $statusBadge = [
+                                'pending' => '<span class="status-badge status-pending">На рассмотрении</span>',
+                                'approved' => '<span class="status-badge status-approved">Одобрено</span>',
+                                'rejected' => '<span class="status-badge status-rejected">Отклонено</span>',
+                            ][$status] ?? '<span class="status-badge">' . htmlspecialchars((string) $status) . '</span>';
+
+                            $bookingCell = '';
+                            if ($isPending) {
+                                if ($hasBooking) {
+                                    $bookingCell = '<span style="color: #ff4d4d; font-weight: 600;">Есть подтверждённая бронь на эту дату</span>';
+                                } elseif (!$tmInfo) {
+                                    $bookingCell = '<span style="color:#999;">Нет привязки к сотруднику в команде</span>';
+                                } else {
+                                    $bookingCell = '<span style="color: #2ecc71;">Нет конфликта с бронями</span>';
+                                }
+                            } else {
+                                $bookingCell = '<span style="color:#999;">—</span>';
+                            }
+
+                            $decidedAt = !empty($prow['decided_at'])
+                                ? htmlspecialchars(date('d.m.Y H:i', strtotime((string) $prow['decided_at'])))
+                                : '—';
+
+                            ?>
+                            <tr>
+                                <td><?= $name !== '' ? $name : '—' ?></td>
+                                <td><strong><?= htmlspecialchars($daysHuman) ?></strong></td>
+                                <td><?= htmlspecialchars(date('d.m.Y H:i', strtotime((string) $prow['created_at']))) ?></td>
+                                <td><?= $bookingCell ?></td>
+                                <td><?= $statusBadge ?></td>
+                                <td><?= $decidedAt ?></td>
+                                <td>
+                                    <?php if ($isPending): ?>
+                                        <button type="button" class="btn-approve"
+                                            onclick="decideTimeOffRequest(<?= (int) $prow['id'] ?>, 'approved')">Одобрить</button>
+                                        <button type="button" class="btn-reject"
+                                            onclick="decideTimeOffRequest(<?= (int) $prow['id'] ?>, 'rejected')">Отклонить</button>
+                                    <?php else: ?>
+                                        <button type="button" class="btn-edit"
+                                            onclick="decideTimeOffRequest(<?= (int) $prow['id'] ?>, 'pending')">Изменить</button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </table>
+                    <?php if ($timeoff_total_pages > 1): ?>
+                        <div class="pagination-container">
+                            <div class="pagination-wrapper">
+                                <?php $timeoff_prev_page = max(1, $timeoff_page - 1); ?>
+                                <button class="pag-arrow prev" <?= ($timeoff_page <= 1) ? 'disabled' : '' ?>
+                                    onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['timeoff_page' => $timeoff_prev_page])) ?>'"
+                                    title="Назад">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M15 18L9 12L15 6"
+                                            stroke="<?= ($timeoff_page <= 1) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+
+                                <div class="pagination-dots">
+                                    <?php for ($i = 1; $i <= $timeoff_total_pages; $i++): ?>
+                                        <span class="dot <?= ($i === $timeoff_page) ? 'active' : '' ?>"
+                                            style="background-color: <?= ($i === $timeoff_page) ? '#8773ff' : 'rgb(135, 115, 255, 0.2)' ?>"
+                                            onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['timeoff_page' => $i])) ?>'"
+                                            title="Страница <?= $i ?>"></span>
+                                    <?php endfor; ?>
+                                </div>
+
+                                <?php $timeoff_next_page = min($timeoff_total_pages, $timeoff_page + 1); ?>
+                                <button class="pag-arrow next" <?= ($timeoff_page >= $timeoff_total_pages) ? 'disabled' : '' ?>
+                                    onclick="location.href='<?= htmlspecialchars(admin_build_page_url(['timeoff_page' => $timeoff_next_page])) ?>'"
+                                    title="Вперед">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M9 6L15 12L9 18"
+                                            stroke="<?= ($timeoff_page >= $timeoff_total_pages) ? 'rgb(135, 115, 255, 0.3)' : '#8773ff' ?>" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
 

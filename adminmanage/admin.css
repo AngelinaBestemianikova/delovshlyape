@@ -431,6 +431,98 @@
   color: #721c24;
 } /* Красный */
 
+/* Блок «Отгулы»: полная ширина (админка и панель аниматора) */
+.profile-section .container > .timeoff-requests-panel {
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.animator-timeoff-form-wrap .animator-timeoff-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.animator-timeoff-form-wrap .animator-timeoff-add-btn.add-button {
+  margin: 0;
+  height: 45px;
+}
+
+.animator-timeoff-form-wrap .animator-timeoff-send-btn.add-button {
+  margin: 0;
+  height: 45px;
+}
+
+.animator-timeoff-form-wrap .form-row.animator-timeoff-datetime-row {
+  margin-bottom: 8px;
+}
+
+.animator-timeoff-form-wrap .field-group.field-group-date {
+  min-width: 0;
+}
+
+.animator-timeoff-form-wrap .animator-timeoff-fp-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 15px 30px;
+  background: white;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(135, 115, 255, 0.4);
+  font-size: 16px;
+  font-family: "Nunito", sans-serif;
+  font-weight: 400;
+  height: 55px;
+  box-sizing: border-box;
+}
+
+.animator-timeoff-form-wrap .animator-timeoff-fp-input:focus {
+  outline: none;
+}
+
+.animator-timeoff-chips.animator-timeoff-chips-bar {
+  margin-top: 12px;
+}
+
+.animator-timeoff-chip-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #faf8ff;
+  border: 1px solid #e0d8f2;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-family: "Nunito", sans-serif;
+}
+
+.animator-timeoff-chip-tag button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #666;
+  padding: 0 0 0 6px;
+}
+
+.timeoff-intro {
+  margin: 0 0 16px;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.45;
+  max-width: 920px;
+}
+
+.timeoff-empty {
+  color: #666;
+  margin: 12px 0 0;
+}
+
 /* Кнопки действий */
 .btn-approve {
   background: #28a745;
@@ -442,21 +534,22 @@
   margin-right: 5px;
 }
 
-/* .btn-reject {
+.btn-reject {
   background: #dc3545;
   color: white;
   border: none;
   padding: 5px 10px;
   cursor: pointer;
   border-radius: 4px;
-} */
-/* 
+}
+
 .btn-approve:hover {
   background: #218838;
 }
+
 .btn-reject:hover {
   background: #c82333;
-} */
+}
 
 /* Контейнер уведомлений */
 .notif-wrapper {

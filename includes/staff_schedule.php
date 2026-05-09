@@ -238,6 +238,38 @@ function staff_schedule_animator_day_cell_is_working(mysqli $link, int $teamMemb
 }
 
 /**
+ * День подходит для запроса отгула: внутри окна планирования графика и отмечен как рабочий (works = 1).
+ */
+function staff_schedule_animator_eligible_time_off_date(mysqli $link, int $teamMemberId, string $dateYmd): bool
+{
+    $meta = staff_schedule_get_meta_row($link);
+    if (!$meta || empty($meta['period_start']) || empty($meta['period_end'])) {
+        return false;
+    }
+    $ps = $meta['period_start'];
+    $pe = $meta['period_end'];
+    if ($dateYmd < $ps || $dateYmd > $pe) {
+        return false;
+    }
+    $stmt = $link->prepare(
+        'SELECT works FROM staff_schedule_days WHERE team_member_id = ? AND work_date = ? LIMIT 1'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('is', $teamMemberId, $dateYmd);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    if (!$row) {
+        return false;
+    }
+
+    return (int) $row['works'] === 1;
+}
+
+/**
  * Список интервалов занятости аниматора в этот день по другим броням (не $excludeBookingId).
  *
  * @param ?list<string> $onlyStatusesIn если задан непустой список — только брони с этими статусами; иначе все, кроме отменённых и архивных

@@ -34,7 +34,8 @@ foreach ($idsIn as $v) {
 $ids = array_values(array_unique($ids));
 
 $bk = $link->query("
-    SELECT b.id, b.event_date, b.status, b.program_id, p.animator_count
+    SELECT b.id, b.event_date, b.event_start_time, b.status, b.program_id, p.animator_count,
+           COALESCE(p.duration, 0) AS program_duration
     FROM bookings b
     INNER JOIN programs p ON p.id = b.program_id
     WHERE b.id = " . (int) $bookingId . "
@@ -59,6 +60,7 @@ if (strtotime($eventDate . ' 23:59:59') <= strtotime('today')) {
 
 $programId = (int) $brow['program_id'];
 $need = (int) $brow['animator_count'];
+$programDuration = (int) ($brow['program_duration'] ?? 0);
 if ($need < 1) {
     echo json_encode(['success' => false, 'message' => 'У программы не задано число аниматоров']);
     exit;
@@ -69,7 +71,20 @@ if (count($ids) !== $need) {
     exit;
 }
 
-$allowed = staff_schedule_available_animators_for_booking_edit($link, $programId, $eventDate, $bookingId);
+$dateYmd = staff_schedule_booking_event_date_ymd((string) $brow['event_date']);
+$slotIv = booking_event_interval_minutes($brow['event_start_time'] ?? null, $programDuration);
+$slotStart = $slotIv['start'] ?? null;
+$slotDur = $slotIv['duration'] ?? null;
+
+$allowed = staff_schedule_available_animators_for_booking_edit(
+    $link,
+    $programId,
+    $dateYmd,
+    $bookingId,
+    null,
+    $slotStart,
+    $slotDur
+);
 $allowedMap = [];
 foreach ($allowed as $a) {
     $allowedMap[(int) $a['id']] = true;
